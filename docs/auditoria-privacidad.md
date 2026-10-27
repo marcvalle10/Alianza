@@ -256,6 +256,10 @@ Prioridad crítica: responsable y canal ARCO; aviso accesible; aprobación de re
 
 La dirección de Alianza aprueba finalidad, retención y proveedores; desarrollo implementa y prueba controles; administración atiende derechos con apoyo jurídico cuando corresponda. Aceptación: cliente A no accede al ticket ni archivo de B; técnico no cambia roles; rechazar IA produce cero llamadas al proveedor; eliminar cuenta ejecuta la política de retención; exportación no expone datos a enlaces públicos.
 
+## Hallazgo adicional de dependencias
+
+La revisión final de npm audit reportó 34 dependencias afectadas, incluida una alerta crítica en tar, después de actualizar tar y shell-quote. Requiere remediación y análisis de alcance antes del piloto; las validaciones de lint, tipos y compilación no certifican seguridad.
+
 ## Fuentes consultadas el 26 de octubre de 2026
 
 [1] LFPDPPP, arts. 7, 8, 9 y 10: https://www.ordenjuridico.gob.mx/Documentos/Federal/html/wo125102.html
