@@ -169,6 +169,8 @@ spec = [
 ('p', 'Crear una solicitud desde móvil; consultar solo tickets autorizados; actualizar estado como técnico; cargar evidencias seleccionadas; impedir modificaciones indebidas de costos y roles; completar conformidad; exportar documento comparado visualmente con la referencia; ejercer borrado conforme a retención; rechazar IA sin afectar el servicio. Probar también red caída, carga fallida y cierre de sesión en dispositivo compartido.'),
 ('h', 'Decisiones pendientes de la empresa'),
 ('p', 'Confirmar responsable jurídico y contacto ARCO; política de visibilidad de tickets por cliente; quién aprueba propuestas; qué firmas exige cada servicio; plazos contractuales y fiscales; región y presupuesto de Firebase; titularidad del repositorio; proveedor de IA. Estas decisiones no impiden preparar la base local, pero sí condicionan un piloto real.'),
+('h', 'Evidencia de fase 1 completada'),
+('p', 'Repositorio: https://github.com/marcvalle10/Alianza\nPrimer commit: 1675496. Ramas main y develop publicadas; main predeterminada y protegida. CI de main correcto: https://github.com/marcvalle10/Alianza/actions/runs/40455409429\nEl estado detallado y las alertas de seguridad se encuentran en docs/estado-entrega.md.'),
 ('h', 'Fuentes técnicas'),
 ('p', '[1] Expo y Firebase: https://docs.expo.dev/guides/using-firebase/\n[2] Electron: https://www.electronjs.org/docs/latest\n[3] Firebase SDK web: https://firebase.google.com/docs/web/setup\n[4] Privacidad Firebase: https://firebase.google.com/support/privacy\nReferencia interna: AI_SERVICIO_0001.pdf, cuatro páginas proporcionadas para análisis de requisitos. No se redistribuye el ejemplar cumplimentado.'),
 ]),

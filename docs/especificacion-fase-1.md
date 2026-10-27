@@ -125,6 +125,12 @@ Crear una solicitud desde móvil; consultar solo tickets autorizados; actualizar
 
 Confirmar responsable jurídico y contacto ARCO; política de visibilidad de tickets por cliente; quién aprueba propuestas; qué firmas exige cada servicio; plazos contractuales y fiscales; región y presupuesto de Firebase; titularidad del repositorio; proveedor de IA. Estas decisiones no impiden preparar la base local, pero sí condicionan un piloto real.
 
+## Evidencia de fase 1 completada
+
+Repositorio: https://github.com/marcvalle10/Alianza
+Primer commit: 1675496. Ramas main y develop publicadas; main predeterminada y protegida. CI de main correcto: https://github.com/marcvalle10/Alianza/actions/runs/40455409429
+El estado detallado y las alertas de seguridad se encuentran en docs/estado-entrega.md.
+
 ## Fuentes técnicas
 
 [1] Expo y Firebase: https://docs.expo.dev/guides/using-firebase/
