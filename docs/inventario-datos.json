@@ -1,0 +1,135 @@
+[
+  [
+    "D01 Cuenta",
+    "Correo de acceso, contraseña y UID.",
+    "Registro e inicio de sesión; obligatorios para una cuenta futura.",
+    "Autenticar y recuperar acceso. La contraseña se entrega únicamente a Authentication; nunca se copia a Firestore ni a registros.",
+    "F1; B1; R1."
+  ],
+  [
+    "D02 Perfil y acceso",
+    "Nombre, empresa, tenantId, rol y técnico asignado.",
+    "Perfil y administración; obligatorios. Rol y tenantId los establece el administrador, no el cliente.",
+    "Separar empresas y limitar acceso. Necesarios; no solicitar identificación oficial.",
+    "F2; B1; R1 y R3 para la asignación histórica."
+  ],
+  [
+    "D03 Control del servicio",
+    "Folio, fecha de solicitud, fecha de terminación y número de orden o referencia.",
+    "Encabezado y apartado 1; folio y fecha inicial automáticos; cierre obligatorio al concluir; orden opcional.",
+    "Trazabilidad del trabajo. No incluir nombres o correos en el folio.",
+    "F2; B1; R3."
+  ],
+  [
+    "D04 Identificación del cliente",
+    "Empresa o cliente y RFC.",
+    "Apartado 1; nombre obligatorio; RFC solo si la operación fiscal o contractual lo requiere.",
+    "Identificar al solicitante y su referencia fiscal. Conservar el campo, pero no exigir RFC para levantar una incidencia.",
+    "F2; B1 y B2 cuando corresponda; R3, o R4 si forma parte de documentación fiscal."
+  ],
+  [
+    "D05 Contacto del servicio",
+    "Contacto responsable, teléfono y correo electrónico.",
+    "Apartado 1; responsable y un medio de contacto obligatorios; teléfono opcional si basta el correo.",
+    "Coordinar visita y aclaraciones. Reutilizar datos confirmados de la cuenta; no leer agenda del dispositivo.",
+    "F2; B1; R3."
+  ],
+  [
+    "D06 Localización manual",
+    "Domicilio del servicio, área o departamento, ubicación específica y ubicación del equipo.",
+    "Apartados 1 y 3; obligatorios para visita física; opcionales o No aplica para soporte remoto.",
+    "Encontrar el lugar de trabajo. Captura manual, sin GPS ni seguimiento continuo.",
+    "F2; B1; R3."
+  ],
+  [
+    "D07 Clasificación",
+    "Tipo de atención, prioridad y estado del servicio.",
+    "Apartado 2; obligatorios. Cliente solicita prioridad; personal confirma la gestión.",
+    "Organizar la atención. Conservar Pendiente, En proceso, Concluido y Requiere seguimiento.",
+    "F2; B1; R3."
+  ],
+  [
+    "D08 Activos",
+    "Equipo o sistema, marca, modelo, número de serie o inventario y cantidad.",
+    "Apartado 3; equipo o sistema requerido; demás campos condicionales según el servicio.",
+    "Diagnóstico e identificación del activo. Evitar inventariar equipos ajenos al trabajo.",
+    "F2; B1; R3."
+  ],
+  [
+    "D09 Solicitud y diagnóstico",
+    "Descripción de falla, necesidad o alcance y diagnóstico técnico o causa probable.",
+    "Apartado 4; solicitud obligatoria; diagnóstico al atender, no al crear.",
+    "Entender y resolver la incidencia. No registrar contraseñas, accesos físicos, salud ni documentos personales.",
+    "F2; B1; R3. Solo una copia revisada y sin identificadores podría usar F4 con B3."
+  ],
+  [
+    "D10 Trabajo realizado",
+    "Actividades marcadas, texto de Otro y detalle del trabajo realizado.",
+    "Apartado 5; obligatorio al documentar la atención; Otro solo al seleccionarlo.",
+    "Dejar evidencia técnica. Limitar nombres de terceros y detalles de seguridad innecesarios.",
+    "F2; B1; R3."
+  ],
+  [
+    "D11 Propuesta económica",
+    "Archivo de cotización: fabricante, modelo, cantidad, descripción, precio unitario, subtotal, tiempo de entrega, IVA, total, moneda y condiciones de pago, validez y entrega cuando aparezcan en el documento.",
+    "Apartado 6; condicional si existe propuesta.",
+    "Respaldar una autorización económica. La propuesta del ejemplo es una imagen adjunta; no se reconstruye ni altera su tabla.",
+    "F3 para archivo y F2 para referencia; B2; R4."
+  ],
+  [
+    "D12 Evidencias",
+    "Fotos Antes y Después, etiquetas o serie, capturas o reporte, archivos, nombre o referencia, enlace y observaciones.",
+    "Apartado 6 y continuación en página 3; opcionales salvo evidencia necesaria del trabajo.",
+    "Documentar el servicio. Elegir archivos puntuales, quitar EXIF y evitar caras, placas y credenciales. No subir toda la galería.",
+    "F3 y F2 para metadatos; B1 más selección y aviso de carga; R5."
+  ],
+  [
+    "D13 Resultado",
+    "Resultado marcado, pruebas finales, motivo de no realización, observaciones y recomendaciones.",
+    "Apartado 7; resultado y pruebas al cierre; motivo obligatorio si no se realizaron.",
+    "Informar el estado real del servicio y limitaciones. No inferir resultados mediante IA.",
+    "F2; B1; R3."
+  ],
+  [
+    "D14 Seguimiento",
+    "Acción requerida, fecha propuesta de próxima visita y responsable del seguimiento.",
+    "Apartado 7; condicional si existe seguimiento.",
+    "Coordinar pendientes. Sin importar calendarios ni contactos personales.",
+    "F2; B1; R3."
+  ],
+  [
+    "D15 Costos adicionales",
+    "Concepto, cantidad, precio unitario, importe, subtotal, IVA, total en MXN y condiciones o autorización de costos; incluye mano de obra, materiales o refacciones y traslado u otros.",
+    "Apartado 8; solo si aplican. Mantener No aplican.",
+    "Registrar costos, no procesar pagos. No recolectar tarjetas, CLABE ni credenciales bancarias.",
+    "F2; B2; R4."
+  ],
+  [
+    "D16 Conformidad",
+    "Nombre, cargo, empresa, firma y correo de prestador, responsable y dos corresponsables.",
+    "Apartado 10; según participación efectiva. No obligar a inventar cuatro firmantes si no existen.",
+    "Acreditar recepción conforme al texto original. Firma gráfica, sin análisis biométrico de presión o velocidad. No equivale a consentimiento de IA.",
+    "F2 para identidad y F3 para firma; B1; R3 o R4 si integra documento contractual."
+  ],
+  [
+    "D17 Seguridad y preferencias",
+    "UID, evento de acceso o cambio, fecha, versión del aviso, selección de consentimiento y revocación; IP y datos técnicos tratados por servicios.",
+    "Sistema y preferencias; eventos mínimos necesarios, consentimiento de IA opcional.",
+    "Auditar acceso y decisiones. No guardar contenido completo ni tokens en logs; sin publicidad ni analítica de comportamiento.",
+    "F5; B1 y B3 para la evidencia de elección; R6 y R7."
+  ],
+  [
+    "D18 Sesión y borradores",
+    "Token de sesión y campos en edición.",
+    "Dispositivo; necesarios mientras se usa la app. En el prototipo solo existen campos en memoria, no tokens.",
+    "Mantener trabajo y sesión. En producción usar almacenamiento seguro y limpiar al salir; caché persistente desactivada inicialmente.",
+    "F0, con token emitido por F1; B1; R0."
+  ],
+  [
+    "D19 Asistencia de IA",
+    "Extracto técnico revisado, categoría sugerida, resumen y registro mínimo de aceptación.",
+    "Botón de asistencia futuro; completamente opcional.",
+    "Sugerir organización del ticket. No enviar RFC, domicilio, contactos, firmas, fotos, precios, folio o tenantId al modelo. No modificar el formato original.",
+    "F4; B3; R8. Proveedor, país y retención contractual pendientes; bloqueado hasta definirlos."
+  ]
+]
