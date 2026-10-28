@@ -1,6 +1,6 @@
 # Estado verificable de la entrega
 
-Fecha: 26 de octubre de 2026. Este registro describe la preparación local del primer commit; los resultados remotos se comprueban en Actions.
+Fecha: 26 de octubre de 2026. Se verificaron las comprobaciones locales y las ejecuciones remotas del commit a7a85da46f99060fc12b1fe751b491145af41697.
 
 | Entregable | Estado |
 |---|---|
@@ -12,8 +12,17 @@ Fecha: 26 de octubre de 2026. Este registro describe la preparación local del p
 | Exportación web | Pasó localmente, 197 módulos |
 | Repositorio remoto | Creado por el usuario: https://github.com/marcvalle10/Alianza |
 | Primer commit y develop | Publicados; primer commit 167549643ff2eec35e3ebeb06138f7b376f35aa9 |
-| GitHub Actions | Pendiente de comprobar tras push |
-| Protección de main | Regla preparada; pendiente de guardar tras primer push |
+| GitHub Actions | Pasó en main y develop: commits, npm ci, linter, tipos y exportación |
+| Protección de main | Activa, con PR obligatorio, check quality, rama actualizada, conversaciones resueltas, bloqueo de borrados y force push |
+
+## Evidencia remota
+
+- [CI de main correcto](https://github.com/marcvalle10/Alianza/actions/runs/40455409429).
+- [CI de develop correcto](https://github.com/marcvalle10/Alianza/actions/runs/40455408609).
+- [Regla activa de main](https://github.com/marcvalle10/Alianza/settings/rules/25935302).
+- main es la rama predeterminada. No hay usuarios de excepción en la regla. Se requieren cero aprobaciones externas porque todavía no se configuró otro revisor; el PR y CI sí son obligatorios. El origen del check figura como Any source, pues GitHub Actions no apareció en el selector; revisar este ajuste cuando esté disponible.
+
+La protección se verificó por su configuración guardada. No se hizo una prueba destructiva de borrado o force push. La documentación final se integra mediante PR para usar el flujo protegido.
 
 Las comprobaciones locales usaron Node 24.19.0. CI está configurado con Node 22. El Node 20.19.0 instalado en el equipo no cumple el mínimo 20.19.4 de React Native 0.81.5; utilizar Node 22 LTS para seguir el README.
 
