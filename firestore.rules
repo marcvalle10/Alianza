@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function verified() { return request.auth != null && request.auth.token.email_verified == true; }
+    function member() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function belongs(tenant) { return verified() && member().tenantId == tenant; }
+    function admin(tenant) { return belongs(tenant) && member().role == 'admin'; }
+    function technician(tenant) { return belongs(tenant) && member().role == 'technician'; }
+    function text(v) { return v is string && v.size() <= 4000; }
+    function required(v) { return text(v) && v.matches('.*[^ ].*'); }
+    function validRequest(r) {
+      return r is map && r.keys().hasOnly(["company","rfc","order","contact","phone","email","address","department","location","equipment","brand","model","serial","quantity","equipmentLocation","description","priority","serviceType"])
+        && r.keys().hasAll(["company","rfc","order","contact","phone","email","address","department","location","equipment","brand","model","serial","quantity","equipmentLocation","description","priority","serviceType"])
+        && text(r.company)
+        && text(r.rfc)
+        && text(r.order)
+        && text(r.contact)
+        && text(r.phone)
+        && text(r.email)
+        && text(r.address)
+        && text(r.department)
+        && text(r.location)
+        && text(r.equipment)
+        && text(r.brand)
+        && text(r.model)
+        && text(r.serial)
+        && text(r.quantity)
+        && text(r.equipmentLocation)
+        && text(r.description)
+        && text(r.priority)
+        && text(r.serviceType)
+        && required(r.company) && required(r.contact) && required(r.equipment) && required(r.description)
+        && r.email.matches('[^ @]+@[^ @]+[.][^ @]+')
+        && r.priority in ['Baja', 'Normal', 'Alta', 'Urgente']
+        && r.serviceType in ['Instalación', 'Preventivo', 'Correctivo', 'Soporte', 'Diagnóstico', 'Garantía', 'Otro'];
+    }
+    function workValid(d) {
+      return d.status in ['Pendiente', 'En proceso', 'Concluido', 'Requiere seguimiento']
+        && text(d.diagnosis) && text(d.workDetail) && text(d.result) && text(d.testReason)
+        && d.finalTests in ['', 'Correctas', 'Con observaciones', 'No realizadas (indicar motivo)']
+        && (d.status != 'Concluido' || (required(d.result) && d.finalTests != ''
+            && (d.finalTests != 'No realizadas (indicar motivo)' || required(d.testReason))));
+    }
+    function validAssignee(tenant, uid) {
+      return uid == null || (uid is string && uid.size() > 0
+        && get(/databases/$(database)/documents/users/$(uid)).data.tenantId == tenant
+        && get(/databases/$(database)/documents/users/$(uid)).data.role == 'technician');
+    }
+    match /users/{uid} {
+      allow get: if verified() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+    match /tenants/{tenant}/tickets/{ticketId} {
+      allow read: if belongs(tenant) && (member().role == 'admin'
+        || (member().role == 'client' && resource.data.createdBy == request.auth.uid)
+        || (member().role == 'technician' && resource.data.assignedTo == request.auth.uid));
+      allow create: if belongs(tenant) && member().role in ['client', 'admin']
+        && request.resource.data.keys().hasOnly(['tenantId','createdBy','assignedTo','status','request','diagnosis','workDetail','result','finalTests','testReason','createdAt','updatedAt'])
+        && request.resource.data.tenantId == tenant
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.assignedTo == null
+        && request.resource.data.status == 'Pendiente'
+        && validRequest(request.resource.data.request)
+        && request.resource.data.diagnosis == '' && request.resource.data.workDetail == ''
+        && request.resource.data.result == '' && request.resource.data.finalTests == '' && request.resource.data.testReason == ''
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+      allow update: if belongs(tenant) && workValid(request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        && ((admin(tenant)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignedTo','status','diagnosis','workDetail','result','finalTests','testReason','updatedAt'])
+          && validAssignee(tenant, request.resource.data.assignedTo))
+        || (technician(tenant) && resource.data.assignedTo == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','diagnosis','workDetail','result','finalTests','testReason','updatedAt'])));
+      allow delete: if false;
+    }
+  }
+}
+

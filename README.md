@@ -1,12 +1,16 @@
 # Alianza Servicios
 
-Base académica de una aplicación de tickets para Alianza Informática. Clientes solicitan servicios y el personal administrará diagnóstico, trabajo, evidencia y cierre. La fase 1 contiene un formulario local; no es un sistema de producción.
+Base académica de una aplicación de tickets para Alianza Informática. Clientes solicitan servicios y el personal gestiona diagnóstico, trabajo y seguimiento. El incremento 2 prepara acceso y tickets con Firebase; requiere configurar el proyecto. No es un sistema de producción.
 
 ## Estado actual
 
 - Expo y TypeScript en `/app`.
 - Esquema de campos del formato de servicio, con apartados 1 a 8 y 10.
-- Captura temporal en memoria; sin autenticación, Firebase, archivos, firmas reales ni IA.
+- Registro, verificación de correo y recuperación de acceso con Firebase Authentication.
+- Captura y consulta de tickets en Firestore con permisos por empresa, cliente y técnico asignado.
+- Asignación por administrador y seguimiento de diagnóstico, trabajo y resultado.
+- Demo del formato completo en `/demo`, temporal en memoria.
+- Archivos, firmas reales, exportación fiel e IA pendientes.
 - Auditoría preventiva y especificación en `/docs`.
 - Workflow de CI y plantilla de pull request.
 
@@ -39,11 +43,20 @@ npm run typecheck
 npm run build:web
 ```
 
-La salida web se genera en `app/dist`. Para servirla localmente se puede usar un servidor estático. El formulario no conserva los datos al cerrar o recargar.
+La salida web se genera en `app/dist`. El servidor de publicación deberá resolver rutas de Expo Router. La demo no conserva datos al recargar; los tickets conectados sí persisten en Firestore. La sesión de acceso solo se conserva en memoria.
 
 ## Configuración y secretos
 
-La demo funciona sin `.env`. `.env.example` describe variables previstas para una integración posterior. Al integrar Firebase, copiar solo las variables públicas necesarias a `app/.env`; mantener credenciales de IA exclusivamente en el backend. Las reglas de seguridad son obligatorias: una clave pública de Firebase no protege la base de datos. No se incluye una cuenta de servicio.
+Sin `.env`, la app muestra conexión pendiente y permite abrir la demo. Para conectar Firebase, copiar las variables públicas de `.env.example` a `app/.env`, habilitar Authentication y publicar `firestore.rules`. Seguir la [guía de Firebase](docs/firebase-setup.md), incluida la activación manual de roles. No se incluye una cuenta de servicio. Las claves de IA pertenecen exclusivamente al backend futuro.
+
+Para probar permisos sin proyecto real, instalar Node 22 y Java 21 y ejecutar desde la raíz:
+
+```sh
+npm ci
+npm run test:rules
+```
+
+Para iniciar el entorno local interactivo: `npm run emulators`. Configurar `EXPO_PUBLIC_USE_FIREBASE_EMULATORS=true` en `app/.env`. Usa exclusivamente el proyecto ficticio `demo-alianza`.
 
 ## Arquitectura prevista
 
@@ -61,13 +74,15 @@ No capturar datos reales en la demo. Los plazos de retención de `/docs` son pro
 
 Ramas: `main` y `develop`. Convención: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`, etc. Ejemplo: `feat: add ticket status filters`.
 
-CI valida los commits nuevos, instala desde el lockfile, ejecuta linter, TypeScript y exportación web. No hay despliegue automático. La protección de main debe aplicarse en GitHub; ver [guía remota](docs/github-configuracion.md).
+CI valida commits, instala desde ambos lockfiles, ejecuta linter, TypeScript, exportación web y pruebas de reglas con Firestore Emulator. No hay despliegue automático. `main` se integra mediante PR y el check `quality`; ver [guía remota](docs/github-configuracion.md).
 
 ## Documentos
 
 - [Especificación de fase 1](docs/especificacion-fase-1.md)
 - [Auditoría de privacidad](docs/auditoria-privacidad.md)
 - [Inventario estructurado](docs/inventario-datos.json)
+- [Configuración de Firebase](docs/firebase-setup.md)
+- [Incremento 2 y cambios de privacidad](docs/incremento-2.md)
 
 Los PDF de entrega se generan localmente en `output/pdf` mediante `scripts/build_documents.py` con Python y ReportLab; esa carpeta está excluida de Git. Las fuentes Markdown sí se versionan.
 
@@ -77,8 +92,8 @@ La plantilla reciente falló por dependencias no publicadas en el registro dispo
 
 ## Siguientes incrementos
 
-1. Firebase y aislamiento entre empresas con pruebas de reglas.
-2. Asignación, seguimiento y validación de campos por etapa.
+1. Configurar el proyecto Firebase real y validar el flujo completo con cuentas ficticias.
+2. Membresías en varias empresas, historial de cambios y resolución de edición concurrente.
 3. Adjuntos y conformidad; exportación fiel del documento.
 4. Retención, borrado y consentimiento de IA.
 5. Piloto y evaluación de escritorio con Electron.
