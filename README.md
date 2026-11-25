@@ -9,13 +9,14 @@ Aplicación de tickets para Alianza Informática. Los clientes solicitan servici
 - Registro, verificación de correo y recuperación de acceso con Firebase Authentication.
 - Captura y consulta de tickets en Firestore con permisos por empresa, cliente y técnico asignado.
 - Asignación por administrador y seguimiento de diagnóstico, trabajo y resultado.
+- Altas por UID, acceso a varias empresas y suspensión por empresa desde Usuarios y permisos. El permiso de altas se otorga a administradores autorizados de Alianza.
 - Demo del formato completo en `/demo`, temporal en memoria.
 - Propuesta adjunta, fotos de antes y después, costos calculados y conformidad autenticada para el prestador y el cliente creador.
 - PDF de cuatro páginas con estructura del formato original y archivos adjuntos. La asistencia de IA sigue desactivada.
 - Auditoría preventiva y especificación en `/docs`.
 - Workflow de CI y plantilla de pull request.
 
-Consultar [estado de entrega](docs/estado-entrega.md) para las verificaciones y pendientes reales.
+El piloto web está en [Alianza Servicios](https://alianza-a1bc3.web.app). La [guía del piloto](docs/piloto-alianza.md) cubre la publicación, las cuentas y Android. La [entrega de Fase 1](docs/estado-entrega.md) documenta esa versión.
 
 ## Requisitos e instalación
 
@@ -44,7 +45,7 @@ npm run typecheck
 npm run build:web
 ```
 
-La salida web se genera en `app/dist`. El servidor de publicación deberá resolver rutas de Expo Router. La demo no conserva datos al recargar; los tickets conectados sí persisten en Firestore. La sesión de acceso solo se conserva en memoria.
+La salida web se genera en `app/dist`. Firebase Hosting tiene configuradas las rutas de Expo Router. La demo usa memoria, los tickets se guardan en Firestore y la sesión se conserva en memoria.
 
 ## Configuración y secretos
 

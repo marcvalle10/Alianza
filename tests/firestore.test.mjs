@@ -1,7 +1,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 
 let env;
 before(async () => { env = await initializeTestEnvironment({ projectId: 'demo-alianza', firestore: { rules: await readFile('firestore.rules', 'utf8') } }); });
@@ -82,6 +82,48 @@ test('admin assigns only technicians within the company; technicians cannot reas
   await assertSucceeds(updateDoc(ref(auth('admin')), { assignedTo: 'tech', updatedAt: serverTimestamp() }));
   for (const assignedTo of ['outsideTech','client','missing']) await assertFails(updateDoc(ref(auth('admin')), { assignedTo, updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(ref(auth('tech')), { assignedTo: 'tech2', updatedAt: serverTimestamp() }));
+});
+function memberRefs(db, tenant, uid) {
+  return [doc(db, 'tenants', tenant, 'members', uid), doc(db, 'users', uid, 'memberships', tenant)];
+}
+function changeAccess(db, actor, tenant, uid, role, active = true) {
+  const batch = writeBatch(db);
+  for (const path of memberRefs(db, tenant, uid)) {
+    batch.set(path, { tenantId: tenant, name: uid, role, active, updatedBy: actor, updatedAt: serverTimestamp() });
+  }
+  return batch.commit();
+}
+test('only Alianza managers can add companies and atomically assign or suspend company access', async () => {
+  await env.withSecurityRulesDisabled(ctx => setDoc(doc(ctx.firestore(), 'alianzaAdmins/access-manager'), {}));
+  const manager = auth('access-manager'), admin = auth('admin'), technician = auth('tech');
+  const company = { name: 'Empresa de prueba', createdAt: serverTimestamp() };
+  await assertFails(setDoc(doc(admin, 'alianzaAdmins/admin'), {}));
+  await assertFails(setDoc(doc(admin, 'tenants/another'), company));
+  await assertSucceeds(setDoc(doc(manager, 'tenants/acme'), company));
+  await assertSucceeds(setDoc(doc(manager, 'tenants/other'), company));
+  await assertFails(getDocs(collection(admin, 'tenants')));
+  await assertFails(getDoc(ref(manager)));
+  await assertFails(changeAccess(admin, 'admin', 'acme', 'tech', 'admin'));
+  await assertFails(changeAccess(technician, 'tech', 'other', 'tech', 'technician'));
+  await assertFails(changeAccess(auth('access-manager', false), 'access-manager', 'other', 'tech', 'technician'));
+  await assertFails(changeAccess(manager, 'access-manager', 'missing', 'tech', 'technician'));
+  await assertFails(setDoc(memberRefs(manager, 'acme', 'tech')[0], {
+    tenantId: 'acme', name: 'tech', role: 'technician', active: true, updatedBy: 'access-manager', updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(changeAccess(manager, 'access-manager', 'acme', 'tech', 'technician'));
+  await assertSucceeds(changeAccess(manager, 'access-manager', 'other', 'tech', 'technician'));
+  await assertSucceeds(changeAccess(manager, 'access-manager', 'other', 'admin', 'admin'));
+  await assertSucceeds(getDocs(collection(technician, 'users/tech/memberships')));
+  await assertFails(getDocs(collection(technician, 'users/admin/memberships')));
+  await assertSucceeds(getDocs(collection(admin, 'tenants/other/members')));
+  await env.withSecurityRulesDisabled(ctx => setDoc(ref(ctx.firestore(), 'new', 'other'), { ...ticket(), tenantId: 'other' }));
+  await assertFails(getDoc(ref(technician, 'new', 'other')));
+  await assertSucceeds(updateDoc(ref(admin, 'new', 'other'), { assignedTo: 'tech', updatedAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(ref(technician, 'new', 'other')));
+  await assertFails(updateDoc(ref(technician, 'new', 'other'), { assignedTo: null, updatedAt: serverTimestamp() }));
+  await assertSucceeds(changeAccess(manager, 'access-manager', 'acme', 'tech', 'technician', false));
+  await assertFails(getDoc(ref(technician, 'assigned')));
+  await assertSucceeds(getDoc(ref(technician, 'new', 'other')));
 });
 test('even administrators cannot rewrite original report or creator', async () => {
   for (const change of [{ createdBy: 'admin' }, { tenantId: 'other' }, { request: { ...ticket().request, company: 'Changed' } }, { createdAt: serverTimestamp() }, { extra: true }]) {

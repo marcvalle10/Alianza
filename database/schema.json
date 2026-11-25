@@ -3,13 +3,26 @@
   "collections": {
     "tenants/{tenantId}": {
       "name": "string",
-      "createdAt": "server timestamp",
-      "createdBy": "administrative setup only"
+      "createdAt": "server timestamp"
     },
     "users/{uid}": {
-      "tenantId": "string (1-80 letters, digits, _ or -)",
+      "tenantId": "legacy profile field (1-80 letters, digits, _ or -)",
       "role": "admin | technician | client",
       "name": "string; account credentials live only in Firebase Authentication"
+    },
+    "alianzaAdmins/{uid}": {
+      "purpose": "A trusted project operator creates this marker for an approved Alianza access administrator. It does not grant ticket privileges by itself."
+    },
+    "tenants/{tenantId}/members/{uid}": {
+      "tenantId": "document tenant",
+      "name": "display name up to 120 characters",
+      "role": "admin | technician | client",
+      "active": "boolean",
+      "updatedAt": "server timestamp",
+      "updatedBy": "Alianza access administrator UID or migration marker"
+    },
+    "users/{uid}/memberships/{tenantId}": {
+      "purpose": "Identical copy of the company membership, written in the same atomic batch. Used by the account to select a company."
     },
     "tenants/{tenantId}/tickets/{ticketId}": {
       "tenantId": "immutable string",
@@ -90,6 +103,6 @@
     "Firestore creates collections on first document write. This JSON documents the model; it is not a Firebase console import dump.",
     "Never put passwords in Firestore.",
     "Storage uses tenants/{tenantId}/tickets/{ticketId}/{slot}, with slots proposal, before and after. Authorization follows the parent ticket.",
-    "One tenant per user in this increment."
+    "An account may have multiple companies. A suspended membership overrides a legacy profile. Existing profiles must be migrated before publishing the Storage rules."
   ]
 }

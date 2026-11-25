@@ -8,20 +8,30 @@ import { useSession } from '../services/session';
 import { watchTickets } from '../services/tickets';
 
 export default function Dashboard() {
-  const { user, membership } = useSession();
+  const { membership } = useSession();
+  return <DashboardContent key={membership?.tenantId} />;
+}
+
+function DashboardContent() {
+  const { user, membership, memberships, selectCompany, canManageAccess, companyNames } = useSession();
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     if (user && membership) return watchTickets(membership, user.uid, setTickets, e => setError(friendlyError(e)));
   }, [user?.uid, membership?.tenantId, membership?.role]);
-  if (!user || !membership) return <Redirect href="/" />;
+  if (!user || !membership) return <Redirect href={canManageAccess ? '/users' : '/'} />;
   return <Page title={membership.name ? `Hola, ${membership.name}` : 'Gestión de servicios'}>
-    <Text style={ui.subtitle}>Empresa activa: {membership.tenantId}</Text>
+    <Text style={ui.subtitle}>Empresa activa · {companyNames[membership.tenantId] || membership.tenantId}</Text>
+    {memberships.length > 1 && <View style={ui.card}>
+      <Text style={ui.label}>Cambiar empresa</Text>
+      <View style={ui.row}>{memberships.map(scope => <Button key={scope.tenantId} title={companyNames[scope.tenantId] || scope.tenantId}
+        secondary={scope.tenantId !== membership.tenantId} onPress={() => selectCompany(scope.tenantId)} />)}</View>
+    </View>}
     {statuses.map(status => <View style={ui.card} key={status}><Text style={ui.label}>{status}</Text><Text style={ui.title}>{tickets?.filter(ticket => ticket.status === status).length ?? '—'}</Text><Button title={`Ver ${status.toLowerCase()}`} secondary onPress={() => router.push({ pathname: '/tickets', params: { status } })} /></View>)}
     {error ? <Text style={ui.error}>{error}</Text> : null}
     <Button title="Ver todos los servicios" onPress={() => router.push('/tickets')} />
     {membership.role !== 'technician' && <Button title="Nuevo reporte" onPress={() => router.push('/tickets/new')} />}
-    {membership.role === 'admin' && <Button title="Usuarios y permisos" secondary onPress={() => router.push('/users')} />}
+    {(canManageAccess || membership.role === 'admin') && <Button title="Usuarios y permisos" secondary onPress={() => router.push('/users')} />}
     <Button title="Perfil y seguridad" secondary onPress={() => router.push('/profile')} />
   </Page>;
 }

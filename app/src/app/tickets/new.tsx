@@ -28,7 +28,7 @@ export default function NewTicket() {
   }
   if (membership?.role === 'technician') return <Redirect href="/tickets" />;
   return <Page title="Nuevo reporte de servicio">
-    <Text style={ui.notice}>Versión de prueba: utiliza datos ficticios. Este formulario inicia el reporte; las evidencias, cotización y firmas del formato completo se incorporarán después.</Text>
+    <Text style={ui.notice}>Usa datos ficticios. Durante la atención podrán agregarse evidencias, cotización y conformidades al expediente.</Text>
     {requestFields.map(([key, label, required]) => <Input key={key} label={`${label}${required ? ' *' : ' (opcional)'}`} value={request[key]} onChange={value => setRequest(r => ({ ...r, [key]: value }))} disabled={busy} multiline={key === 'description'} email={key === 'email'} />)}
     <Text style={ui.label}>Prioridad</Text><View style={ui.row}>{priorities.map(value => <Button key={value} title={value} disabled={busy} secondary={request.priority !== value} onPress={() => setRequest(r => ({ ...r, priority: value }))} />)}</View>
     <Text style={ui.label}>Tipo de atención</Text><View style={ui.row}>{serviceTypes.map(value => <Button key={value} title={value} disabled={busy} secondary={request.serviceType !== value} onPress={() => setRequest(r => ({ ...r, serviceType: value }))} />)}</View>

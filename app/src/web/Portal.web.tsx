@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useSession } from '../services/session';
+import { useCompanyAccess } from '../services/company-access';
 import { friendlyError, getFirebase } from '../services/firebase';
 import { createTicket, newTicketId, updateWork, watchTicket, watchTickets, type WorkUpdate } from '../services/tickets';
 import { watchCompanyUsers, type CompanyUser } from '../services/users';
-import { blankRequest, priorities, requestFields, serviceTypes, statuses, validateRequest, type Ticket, type TicketStatus } from '../domain/tickets';
+import { blankRequest, priorities, requestFields, roles, serviceTypes, statuses, validateRequest, type Role, type Ticket, type TicketStatus } from '../domain/tickets';
 import { fieldBinding, recordValues } from '../domain/record';
 import { conformity, sections, type Field as SchemaField } from '../ticket-schema';
 import { Choices, Field, Icon, Shell, Status, Title, roleNames } from './shared.web';
@@ -16,14 +17,14 @@ import { privacyRequestTypes, requestPrivacyAction, type PrivacyRequest } from '
 type Screen = 'dashboard' | 'services' | 'new' | 'record' | 'profile' | 'users' | 'demo';
 const date = (v: Ticket['createdAt']) => v ? v.toDate().toLocaleDateString('es-MX') : 'Pendiente';
 export default function Portal({ screen }: { screen: Screen }) {
-  const { user, membership, loading } = useSession();
+  const { user, membership, loading, canManageAccess } = useSession();
   if (screen === 'demo') return <Shell demo><Record demo /></Shell>;
   if (loading) return <div className="loading-page" role="status">Comprobando acceso…</div>;
-  if (!user?.emailVerified || !membership) return <Redirect href="/" />;
-  return <Shell>{screen === 'dashboard' || screen === 'services' ? <Services dashboard={screen === 'dashboard'} /> : screen === 'new' ? <NewReport /> : screen === 'record' ? <Record /> : screen === 'users' ? <Users /> : <Profile />}</Shell>;
+  if (!user?.emailVerified || (!membership && !(canManageAccess && screen === 'users'))) return <Redirect href="/" />;
+  return <Shell key={membership?.tenantId}>{screen === 'dashboard' || screen === 'services' ? <Services dashboard={screen === 'dashboard'} /> : screen === 'new' ? <NewReport /> : screen === 'record' ? <Record /> : screen === 'users' ? <Users /> : <Profile />}</Shell>;
 }
 function Services({ dashboard }: { dashboard: boolean }) {
-  const { user, membership } = useSession();
+  const { user, membership, memberships, selectCompany, canManageAccess, companyNames } = useSession();
   const params = useLocalSearchParams<{ status?: string }>();
   const [items, setItems] = useState<Ticket[]>([]), [error, setError] = useState(''), [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(''), [filter, setFilter] = useState(params.status || 'Todos'), [priority, setPriority] = useState('Todas');
@@ -34,7 +35,7 @@ function Services({ dashboard }: { dashboard: boolean }) {
   const create = membership?.role !== 'technician' ? <button className="primary" onClick={() => router.push('/tickets/new')}><Icon name="new" />Crear reporte</button> : null;
   return <><Title eyebrow={dashboard ? `PANEL DE ${roleNames[membership!.role].toUpperCase()}` : 'GESTIÓN DE SERVICIOS'} title={dashboard ? `Hola, ${membership?.name || 'bienvenido'}` : 'Servicios'} subtitle={dashboard ? 'Consulta el estado de tus servicios y continúa donde lo dejaste.' : `${loading ? '…' : visible.length} expedientes visibles para tu cuenta`}>{create}</Title>
     {error && <p className="error-banner" role="alert">{error}</p>}{loading && <p role="status">Cargando servicios…</p>}
-    {dashboard ? <><div className="metrics">{statuses.map(status => <button className="metric" key={status} onClick={() => router.push({ pathname: '/tickets', params: { status } })}><span>{status}</span><strong>{loading ? '—' : items.filter(t => t.status === status).length}</strong><small>Servicios de tu cuenta</small><Icon name="chev" /></button>)}</div><div className="dashboard-grid"><div className="panel"><div className="panel-title"><div><h2>Atención prioritaria</h2><p>Servicios abiertos, ordenados por prioridad</p></div><button className="link" onClick={() => router.push('/tickets')}>Ver todos</button></div>{items.filter(t => t.status !== 'Concluido').sort((a,b) => priorities.indexOf(b.request.priority as typeof priorities[number]) - priorities.indexOf(a.request.priority as typeof priorities[number])).slice(0, 5).map(t => <button className="service-row" key={t.id} onClick={() => open(t.id)}><span className={`priority ${t.request.priority.toLowerCase()}`}>●</span><span><strong>{t.request.company}</strong><small>{t.request.description}</small></span><Status>{t.status}</Status><span className="date">{date(t.createdAt)}</span><Icon name="chev" /></button>)}{!loading && !items.some(t => t.status !== 'Concluido') && <div className="empty-state"><Icon name="services" /><h3>Sin servicios abiertos</h3><p>Los reportes aparecerán aquí cuando se registren.</p></div>}</div><div className="panel"><h2>Tu espacio de trabajo</h2><p className="muted">{membership?.role === 'client' ? 'Puedes crear solicitudes y consultar su seguimiento.' : membership?.role === 'technician' ? 'Aquí encontrarás los servicios que te hayan asignado.' : 'Consulta expedientes y asigna técnicos de tu empresa.'}</p><div className="notice blue"><b>Empresa activa</b><p>{membership?.tenantId}</p></div><p className="hint">Los indicadores se calculan con los expedientes a los que tienes acceso. No incluyen datos de otras empresas.</p></div></div></> : <><div className="filter-panel"><label className="search-box"><Icon name="search" /><input aria-label="Buscar servicios" placeholder="Buscar por folio, empresa o descripción" value={search} onChange={e => setSearch(e.target.value)} /></label><select aria-label="Estado del servicio" value={filter} onChange={e => setFilter(e.target.value)}>{['Todos', ...statuses].map(s => <option key={s}>{s}</option>)}</select><select aria-label="Prioridad" value={priority} onChange={e => setPriority(e.target.value)}><option value="Todas">Todas las prioridades</option>{priorities.map(p => <option key={p}>{p}</option>)}</select></div><div className="table-panel"><table><thead><tr><th>Folio</th><th>Empresa / servicio</th><th>Estado</th><th>Prioridad</th><th>Fecha</th><th>Detalle</th></tr></thead><tbody>{visible.map(t => <tr key={t.id}><td className="folio-cell">{t.id}</td><td><strong>{t.request.company}</strong><small>{t.request.description}</small></td><td><Status>{t.status}</Status></td><td><span className={`priority ${t.request.priority.toLowerCase()}`}>● {t.request.priority}</span></td><td>{date(t.createdAt)}</td><td><button className="link" aria-label={`Abrir reporte ${t.id}`} onClick={() => open(t.id)}>Abrir →</button></td></tr>)}</tbody></table>{visible.map(t => <button className="mobile-card" key={t.id} onClick={() => open(t.id)}><span><strong>{t.request.company}</strong><small className="folio-cell">{t.id}</small></span><Status>{t.status}</Status><p>{t.request.description}</p><footer><span>{t.request.priority}</span><span>{date(t.createdAt)}</span></footer></button>)}</div>{!loading && !visible.length && <div className="panel empty-state"><Icon name="services" /><h3>No hay reportes que mostrar</h3><p>Prueba otros filtros o crea una solicitud.</p></div>}</>}
+    {dashboard ? <><div className="metrics">{statuses.map(status => <button className="metric" key={status} onClick={() => router.push({ pathname: '/tickets', params: { status } })}><span>{status}</span><strong>{loading ? '—' : items.filter(t => t.status === status).length}</strong><small>Servicios de tu cuenta</small><Icon name="chev" /></button>)}</div><div className="dashboard-grid"><div className="panel"><div className="panel-title"><div><h2>Atención prioritaria</h2><p>Servicios abiertos, ordenados por prioridad</p></div><button className="link" onClick={() => router.push('/tickets')}>Ver todos</button></div>{items.filter(t => t.status !== 'Concluido').sort((a,b) => priorities.indexOf(b.request.priority as typeof priorities[number]) - priorities.indexOf(a.request.priority as typeof priorities[number])).slice(0, 5).map(t => <button className="service-row" key={t.id} onClick={() => open(t.id)}><span className={`priority ${t.request.priority.toLowerCase()}`}>●</span><span><strong>{t.request.company}</strong><small>{t.request.description}</small></span><Status>{t.status}</Status><span className="date">{date(t.createdAt)}</span><Icon name="chev" /></button>)}{!loading && !items.some(t => t.status !== 'Concluido') && <div className="empty-state"><Icon name="services" /><h3>Sin servicios abiertos</h3><p>Los reportes aparecerán aquí cuando se registren.</p></div>}</div><div className="panel"><h2>Tu espacio de trabajo</h2><p className="muted">{membership?.role === 'client' ? 'Puedes crear solicitudes y consultar su seguimiento.' : membership?.role === 'technician' ? 'Aquí encontrarás los servicios que te hayan asignado.' : 'Consulta expedientes y asigna técnicos de tu empresa.'}</p><div className="notice blue"><b>Empresa activa</b>{membership && (memberships.length > 1 ? <label className="field"><span>Cambiar empresa</span><select value={membership.tenantId} onChange={event => selectCompany(event.target.value)}>{memberships.map(scope => <option key={scope.tenantId} value={scope.tenantId}>{companyNames[scope.tenantId] || scope.tenantId}</option>)}</select></label> : <p>{companyNames[membership.tenantId] || membership.tenantId}</p>)}</div>{(canManageAccess || membership?.role === 'admin') && <button className="secondary" onClick={() => router.push('/users')}>Usuarios y permisos</button>}<p className="hint">Los indicadores se calculan con los expedientes a los que tienes acceso. No incluyen datos de otras empresas.</p></div></div></> : <><div className="filter-panel"><label className="search-box"><Icon name="search" /><input aria-label="Buscar servicios" placeholder="Buscar por folio, empresa o descripción" value={search} onChange={e => setSearch(e.target.value)} /></label><select aria-label="Estado del servicio" value={filter} onChange={e => setFilter(e.target.value)}>{['Todos', ...statuses].map(s => <option key={s}>{s}</option>)}</select><select aria-label="Prioridad" value={priority} onChange={e => setPriority(e.target.value)}><option value="Todas">Todas las prioridades</option>{priorities.map(p => <option key={p}>{p}</option>)}</select></div><div className="table-panel"><table><thead><tr><th>Folio</th><th>Empresa / servicio</th><th>Estado</th><th>Prioridad</th><th>Fecha</th><th>Detalle</th></tr></thead><tbody>{visible.map(t => <tr key={t.id}><td className="folio-cell">{t.id}</td><td><strong>{t.request.company}</strong><small>{t.request.description}</small></td><td><Status>{t.status}</Status></td><td><span className={`priority ${t.request.priority.toLowerCase()}`}>● {t.request.priority}</span></td><td>{date(t.createdAt)}</td><td><button className="link" aria-label={`Abrir reporte ${t.id}`} onClick={() => open(t.id)}>Abrir →</button></td></tr>)}</tbody></table>{visible.map(t => <button className="mobile-card" key={t.id} onClick={() => open(t.id)}><span><strong>{t.request.company}</strong><small className="folio-cell">{t.id}</small></span><Status>{t.status}</Status><p>{t.request.description}</p><footer><span>{t.request.priority}</span><span>{date(t.createdAt)}</span></footer></button>)}</div>{!loading && !visible.length && <div className="panel empty-state"><Icon name="services" /><h3>No hay reportes que mostrar</h3><p>Prueba otros filtros o crea una solicitud.</p></div>}</>}
   </>;
 }
 function NewReport() {
@@ -115,10 +116,50 @@ function Record({ demo = false }: { demo?: boolean }) {
     </section>)}{!demo && <ExportService ticket={ticket} entries={entries} disabled={busy || dirty || conflict || Boolean(readError)} />}</div></div></>;
 }
 function Users() {
-  const { membership } = useSession(); const [people,setPeople] = useState<CompanyUser[]>([]), [error,setError] = useState('');
-  useEffect(() => { if (membership?.role === 'admin') return watchCompanyUsers(membership.tenantId,setPeople,e => setError(friendlyError(e))); }, [membership?.role,membership?.tenantId]);
-  if (membership?.role !== 'admin') return <Redirect href="/dashboard" />;
-  return <><Title eyebrow="ADMINISTRACIÓN" title="Usuarios y permisos" subtitle="Accesos de la empresa activa." /><div className="panel"><div className="notice blue"><b>Asignación segura de roles</b><p>Esta pantalla consulta los perfiles. Por ahora, las altas, cambios de rol y activaciones se realizan en la consola de Firebase por el responsable del proyecto.</p></div>{error && <p className="error-banner" role="alert">{error}</p>}{people.map(p => <div className="user-row" key={p.uid}><span className="avatar">{(p.name || 'U').slice(0,2).toUpperCase()}</span><span><strong>{p.name || 'Sin nombre'}</strong><small className="folio-cell">{p.uid}</small></span><span>{roleNames[p.role]}</span><Status>Perfil asignado</Status></div>)}</div></>;
+  const { membership } = useSession();
+  const access = useCompanyAccess();
+  if (!access.canManageAccess && membership?.role !== 'admin') return <Redirect href="/dashboard" />;
+  return <><Title eyebrow="ADMINISTRACIÓN" title="Usuarios y permisos" />
+    {access.canManageAccess && <div className="settings-grid access-settings">
+      <form className="panel" onSubmit={e => { e.preventDefault(); void access.save(); }}>
+        <h2>Asignar acceso</h2>
+        <p className="muted">Usa el UID que la persona recibe después de verificar su correo.</p>
+        <fieldset disabled={access.busy}>
+          <label className="field"><span>Empresa</span><select required value={access.tenantId || ''} onChange={e => access.select(e.target.value)}>
+            <option value="" disabled>Selecciona una empresa</option>
+            {access.companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
+          </select></label>
+          <Field label="UID de la cuenta" value={access.uid} onChange={access.setUid} required />
+          <Field label="Nombre de la persona" value={access.name} onChange={access.setName} required />
+          <label className="field"><span>Rol en esta empresa</span><select value={access.role} onChange={e => access.setRole(e.target.value as Role)}>
+            {roles.map(role => <option key={role} value={role}>{roleNames[role]}</option>)}
+          </select></label>
+          <button className="primary" disabled={!access.tenantId}>Guardar acceso</button>
+        </fieldset>
+      </form>
+      <form className="panel" onSubmit={e => { e.preventDefault(); void access.addCompany(); }}>
+        <h2>Nueva empresa</h2>
+        <fieldset disabled={access.busy}>
+          <Field label="Nombre de la empresa" value={access.companyName} onChange={access.setCompanyName} required />
+          <button className="secondary">Crear empresa</button>
+        </fieldset>
+      </form>
+    </div>}
+    {access.error && <p className="error-banner" role="alert">{access.error}</p>}
+    {access.message && <p className="notice blue" role="status">{access.message}</p>}
+    {access.tenantId && <div className="panel"><h2>Accesos de la empresa</h2>
+      {access.people?.map(person => <div className="access-row" key={person.uid}>
+        <div><strong>{person.name || 'Perfil'}</strong><p className="muted">{roleNames[person.role]} · {person.active ? 'Activo' : 'Suspendido'}</p></div>
+        {access.canManageAccess && <div className="access-buttons">
+          <button className="secondary" disabled={access.busy} onClick={() => access.edit(person)}>{person.active ? 'Editar acceso' : 'Preparar reactivación'}</button>
+          {person.active && <button className="secondary" disabled={access.busy} onClick={() => {
+            if (window.confirm(`¿Suspender a ${person.name} en esta empresa?`)) void access.suspend(person);
+          }}>Suspender</button>}
+        </div>}
+      </div>)}
+      {!access.error && (access.people ? (!access.people.length && <p>Sin perfiles asignados.</p>) : <p role="status">Cargando perfiles…</p>)}
+    </div>}
+  </>;
 }
 function Profile() {
   const { user,membership,logout } = useSession(); const [message,setMessage] = useState(''),[error,setError] = useState(''),[busy,setBusy] = useState(false);

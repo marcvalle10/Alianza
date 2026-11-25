@@ -1,5 +1,6 @@
 export const roles = ['client', 'technician', 'admin'] as const;
 export type Role = typeof roles[number];
+export const roleNames: Record<Role, string> = { admin: 'Administrador', technician: 'Técnico', client: 'Cliente' };
 export type Membership = { tenantId: string; role: Role; name: string };
 export const statuses = ['Pendiente', 'En proceso', 'Concluido', 'Requiere seguimiento'] as const;
 export type TicketStatus = typeof statuses[number];

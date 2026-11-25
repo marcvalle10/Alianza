@@ -13,6 +13,11 @@ import { watchCompanyUsers, type CompanyUser } from '../../services/users';
 import { sections, type Field } from '../../ticket-schema';
 
 export default function TicketDetail() {
+  const { membership } = useSession();
+  return <TicketDetailContent key={membership?.tenantId} />;
+}
+
+function TicketDetailContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { membership } = useSession();
   const [ticket, setTicket] = useState<Ticket | null>(null);

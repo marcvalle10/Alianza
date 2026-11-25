@@ -2,10 +2,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function verified() { return request.auth != null && request.auth.token.email_verified == true; }
-    function member() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function belongs(tenant) { return verified() && member().tenantId == tenant; }
-    function admin(tenant) { return belongs(tenant) && member().role == 'admin'; }
-    function technician(tenant) { return belongs(tenant) && member().role == 'technician'; }
+    function companyMember(tenant, uid) {
+      return /databases/$(database)/documents/tenants/$(tenant)/members/$(uid);
+    }
+    function personalMembership(tenant, uid) {
+      return /databases/$(database)/documents/users/$(uid)/memberships/$(tenant);
+    }
+    function legacyRole(tenant, uid) {
+      let profile = /databases/$(database)/documents/users/$(uid);
+      return exists(profile) && get(profile).data.get('tenantId', '') == tenant
+        ? get(profile).data.get('role', '') : '';
+    }
+    function roleFor(tenant, uid) {
+      let path = companyMember(tenant, uid);
+      return exists(path)
+        ? (get(path).data.active == true ? get(path).data.role : '')
+        : legacyRole(tenant, uid);
+    }
+    function mine(tenant) { return roleFor(tenant, request.auth.uid); }
+    function belongs(tenant) { return verified() && mine(tenant) in ['client', 'technician', 'admin']; }
+    function admin(tenant) { return verified() && mine(tenant) == 'admin'; }
+    function technician(tenant) { return verified() && mine(tenant) == 'technician'; }
+    function accessManager() {
+      return verified() && exists(/databases/$(database)/documents/alianzaAdmins/$(request.auth.uid));
+    }
+    function validMembership(tenant, uid, mirror) {
+      let next = request.resource.data;
+      return accessManager()
+        && exists(/databases/$(database)/documents/tenants/$(tenant))
+        && tenant.matches('[a-zA-Z0-9_-]{1,80}') && uid.matches('[a-zA-Z0-9_-]{1,128}')
+        && next.keys().hasOnly(['tenantId','name','role','active','updatedBy','updatedAt'])
+        && next.tenantId == tenant && next.role in ['client', 'technician', 'admin']
+        && required(next.name) && next.name.size() <= 120 && next.active is bool
+        && next.updatedBy == request.auth.uid && next.updatedAt == request.time
+        && existsAfter(mirror) && getAfter(mirror).data == next;
+    }
     function text(v) { return v is string && v.size() <= 4000; }
     function required(v) { return text(v) && v.matches('.*[^ ].*'); }
     function validRequest(r) {
@@ -94,8 +125,7 @@ service cloud.firestore {
     }
     function validAssignee(tenant, uid) {
       return uid == null || (uid is string && uid.size() > 0
-        && get(/databases/$(database)/documents/users/$(uid)).data.tenantId == tenant
-        && get(/databases/$(database)/documents/users/$(uid)).data.role == 'technician');
+        && roleFor(tenant, uid) == 'technician');
     }
     function closureValid(old, next) {
       let oldDate = old.get('completedAt', null);
@@ -108,12 +138,33 @@ service cloud.firestore {
       allow get: if verified() && (request.auth.uid == uid || admin(resource.data.tenantId));
       allow list: if verified() && admin(resource.data.tenantId);
       allow create, update, delete: if false;
+      match /memberships/{tenant} {
+        allow read: if verified() && (request.auth.uid == uid || accessManager());
+        allow create, update: if validMembership(tenant, uid, companyMember(tenant, uid));
+        allow delete: if false;
+      }
+    }
+    match /alianzaAdmins/{uid} {
+      allow get: if verified() && request.auth.uid == uid;
+    }
+    match /tenants/{tenant} {
+      allow get: if accessManager() || belongs(tenant);
+      allow list: if accessManager();
+      allow create: if accessManager() && tenant.matches('[a-zA-Z0-9_-]{1,80}')
+        && request.resource.data.keys().hasOnly(['name','createdAt'])
+        && required(request.resource.data.name) && request.resource.data.name.size() <= 120
+        && request.resource.data.createdAt == request.time;
+      match /members/{uid} {
+        allow read: if accessManager() || admin(tenant);
+        allow create, update: if validMembership(tenant, uid, personalMembership(tenant, uid));
+        allow delete: if false;
+      }
     }
     match /tenants/{tenant}/tickets/{ticketId} {
-      allow read: if belongs(tenant) && (member().role == 'admin'
-        || (member().role == 'client' && resource.data.createdBy == request.auth.uid)
-        || (member().role == 'technician' && resource.data.assignedTo == request.auth.uid));
-      allow create: if belongs(tenant) && member().role in ['client', 'admin']
+      allow read: if verified() && (mine(tenant) == 'admin'
+        || (mine(tenant) == 'client' && resource.data.createdBy == request.auth.uid)
+        || (mine(tenant) == 'technician' && resource.data.assignedTo == request.auth.uid));
+      allow create: if verified() && mine(tenant) in ['client', 'admin']
         && request.resource.data.keys().hasOnly(['tenantId','createdBy','assignedTo','status','request','diagnosis','workDetail','result','finalTests','testReason','createdAt','updatedAt'])
         && request.resource.data.tenantId == tenant
         && request.resource.data.createdBy == request.auth.uid
@@ -126,7 +177,8 @@ service cloud.firestore {
       allow update: if belongs(tenant) && request.resource.data.updatedAt == request.time
         && ((admin(tenant)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignedTo','status','diagnosis','workDetail','result','finalTests','testReason','details','updatedAt','completedAt'])
-          && validAssignee(tenant, request.resource.data.assignedTo))
+          && (request.resource.data.assignedTo == resource.data.assignedTo
+            || validAssignee(tenant, request.resource.data.assignedTo)))
         || (technician(tenant) && resource.data.assignedTo == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','diagnosis','workDetail','result','finalTests','testReason','details','updatedAt','completedAt'])))
         && workValid(request.resource.data) && closureValid(resource.data, request.resource.data)
@@ -138,11 +190,11 @@ service cloud.firestore {
         function parentTicket() { return get(/databases/$(database)/documents/tenants/$(tenant)/tickets/$(ticketId)).data; }
         allow read: if belongs(tenant) && (admin(tenant)
           || (technician(tenant) && parentTicket().assignedTo == request.auth.uid)
-          || (member().role == 'client' && parentTicket().createdBy == request.auth.uid));
+          || (mine(tenant) == 'client' && parentTicket().createdBy == request.auth.uid));
         allow create: if belongs(tenant) && parentTicket().status == 'Concluido'
           && parentTicket().get('completedAt', null) != null
           && ((party == 'provider' && technician(tenant) && parentTicket().assignedTo == request.auth.uid)
-            || (party == 'client' && member().role == 'client' && parentTicket().createdBy == request.auth.uid))
+            || (party == 'client' && mine(tenant) == 'client' && parentTicket().createdBy == request.auth.uid))
           && request.resource.data.keys().hasOnly(['uid','name','acceptedAt','termsVersion'])
           && request.resource.data.uid == request.auth.uid
           && required(request.resource.data.name) && request.resource.data.name.size() <= 120

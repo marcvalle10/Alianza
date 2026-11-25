@@ -2,20 +2,25 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function verified() { return request.auth != null && request.auth.token.email_verified == true; }
-    function profile() { return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data; }
-    function ticket(tenant, id) { return firestore.get(/databases/(default)/documents/tenants/$(tenant)/tickets/$(id)).data; }
+    function membership(tenant) {
+      return firestore.get(/databases/(default)/documents/tenants/$(tenant)/members/$(request.auth.uid));
+    }
+    function ticket(tenant, id) { return firestore.get(/databases/(default)/documents/tenants/$(tenant)/tickets/$(id)); }
+    function active(tenant, member) {
+      return member != null && member.data.active == true && member.data.tenantId == tenant;
+    }
     function reader(tenant, id) {
-      let p = profile();
+      let p = membership(tenant);
       let t = ticket(tenant, id);
-      return p.tenantId == tenant && t.tenantId == tenant && (p.role == 'admin'
-        || (p.role == 'technician' && t.assignedTo == request.auth.uid)
-        || (p.role == 'client' && t.createdBy == request.auth.uid));
+      return active(tenant, p) && t != null && t.data.tenantId == tenant && (p.data.role == 'admin'
+        || (p.data.role == 'technician' && t.data.assignedTo == request.auth.uid)
+        || (p.data.role == 'client' && t.data.createdBy == request.auth.uid));
     }
     function editor(tenant, id) {
-      let p = profile();
+      let p = membership(tenant);
       let t = ticket(tenant, id);
-      return p.tenantId == tenant && t.tenantId == tenant && t.status != 'Concluido'
-        && (p.role == 'admin' || (p.role == 'technician' && t.assignedTo == request.auth.uid));
+      return active(tenant, p) && t != null && t.data.tenantId == tenant && t.data.status != 'Concluido'
+        && (p.data.role == 'admin' || (p.data.role == 'technician' && t.data.assignedTo == request.auth.uid));
     }
     match /tenants/{tenant}/tickets/{id}/{slot} {
       allow get: if verified() && slot in ['proposal', 'before', 'after'] && reader(tenant, id);

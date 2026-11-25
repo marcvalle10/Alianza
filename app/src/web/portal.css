@@ -20,3 +20,4 @@
 .attachment-selection p{line-height:1.5;color:var(--muted)}
 .pdf-preview{display:grid;justify-items:start;gap:12px;margin-top:12px}.pdf-preview iframe{width:100%;height:630px;border:1px solid var(--line);border-radius:9px}
 @media(max-width:700px){.attachment-grid{grid-template-columns:1fr}.pdf-preview iframe{height:440px}}
+.access-settings { align-items: start; margin-bottom: 18px; } .access-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); } .access-row:last-child { border-bottom: 0; } .access-row p { margin: 5px 0 0; } .access-buttons { display: flex; flex-wrap: wrap; gap: 8px; }

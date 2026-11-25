@@ -37,12 +37,44 @@ Pasaron ESLint, TypeScript, la exportación web y la generación del paquete Jav
 
 1. Confirmar el ID y la configuración pública del proyecto Firebase para pruebas. Habilitar correo y contraseña. Registrar la región de Firestore y del bucket. Mantener un proyecto separado del entorno de producción.
 2. Configurar `app/.env` usando `.env.example`, incluido `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`. Desactivar el modo emulador. Antes del despliegue comprobar el proyecto de destino y revisar el costo y las cuotas de Storage.
-3. Publicar reglas e índices para el proyecto de prueba con `firebase deploy --only firestore,storage --project ID_DE_PRUEBAS`. Habilitar el acceso entre las reglas de Storage y la instancia Firestore predeterminada. En web, configurar CORS del bucket para el origen de prueba, con las peticiones autenticadas de descarga. Verificar acceso con otro usuario del mismo tenant, uno de otro tenant y una sesión cerrada.
-4. Crear perfiles por UID con la guía de Firebase. Usar cuentas ficticias y no reutilizar las claves locales de prueba. Verificar en un dispositivo Android y en la web con los mismos pasos de arriba.
+3. Para proyectos con perfiles previos, ejecutar la migración antes de publicar las reglas de Storage. Usar una cuenta administrativa autorizada con Application Default Credentials, desde la raíz, después de `npm ci`.
+
+   ```sh
+   node scripts/migrate-company-access.mjs ID_DE_PRUEBAS --check
+   node scripts/migrate-company-access.mjs ID_DE_PRUEBAS --apply
+   node scripts/migrate-company-access.mjs ID_DE_PRUEBAS --check
+   firebase deploy --only firestore,storage --project ID_DE_PRUEBAS
+   ```
+
+   La primera revisión devuelve código 2 si hay accesos pendientes. La migración copia los perfiles válidos sin reemplazar accesos existentes. La revisión final debe mostrar cero pendientes. Habilitar el acceso entre las reglas de Storage y la base Firestore predeterminada y configurar CORS para el origen HTTPS autorizado.
+
+4. Publicar Hosting desde la rama `codex/publicacion-alianza`. Desde la raíz, ejecutar `npm --prefix app run build:web` con la configuración de Firebase de prueba y luego `firebase deploy --only hosting --project ID_DE_PRUEBAS`.
+
+## Altas y asignaciones
+
+1. El propietario autorizado de Firebase valida la identidad y el correo verificado de la persona designada para altas. Crea un documento en `alianzaAdmins` con su UID exacto como ID. Puede usar el campo `designacion: "Administración de accesos"`. Solo un operador con acceso administrativo a Firebase puede crear o retirar ese permiso general.
+2. Cada persona se registra con su correo, verifica el enlace y entrega su UID al personal autorizado de Alianza. El administrador comprueba por un canal de la empresa que el UID corresponde al correo verificado y a la persona que debe recibir acceso.
+3. En **Usuarios y permisos**, el administrador autorizado crea o elige la empresa, captura el UID, el nombre y el rol, y guarda. Para asignar otra empresa, repite el registro con el mismo UID. Para suspender o reactivar, elige primero la empresa correspondiente.
+4. El personal cambia la empresa desde Inicio. El administrador de esa empresa asigna cada ticket a un técnico activo de la misma. El técnico consulta sus tickets asignados. El cliente consulta sus propios reportes.
+
+El permiso general de altas permite gestionar empresas y accesos. Cada expediente requiere además el rol aplicable en su empresa. La baja por empresa suspende esa membresía. Para una baja total, revisar todas las membresías, revocar las sesiones y atender la conservación de los expedientes por separado.
+
+## APK de revisión
+
+El perfil EAS `preview` genera un APK Android con el identificador `com.alianzainformatica.servicios` y el logotipo de Alianza. La cuenta u organización mantenedora debe tener acceso al proyecto EAS y conservar la clave de firma y su respaldo autorizado. Instalar futuras actualizaciones del mismo identificador exige la misma clave.
+
+Desde `app`, iniciar sesión con la cuenta mantenedora y vincular el proyecto EAS correspondiente. Configurar las variables `EXPO_PUBLIC_FIREBASE_*` del entorno EAS `preview` para el proyecto Firebase de pruebas y `EXPO_PUBLIC_USE_FIREBASE_EMULATORS=false`. Confirmar los valores antes de compilar. Los archivos `.env` locales están ignorados por Git y las credenciales de firma se guardan aparte.
+
+```sh
+npx eas-cli@latest whoami
+npx eas-cli@latest build --platform android --profile preview
+```
+
+Si el registro de npm no resuelve una dependencia de la versión actual, `eas-cli@18.0.1` es la versión que se comprobó que arranca para iniciar sesión en este entorno. Una vez descargada la APK, instalarla en un teléfono y validar inicio de sesión, cambio de empresa, asignación, fotos y exportación. [Distribución de APK con EAS](https://docs.expo.dev/build-reference/apk/)
 
 ## Validación en Firebase de pruebas
 
-El proyecto `alianza-a1bc3` usa Firestore y el bucket `alianza-a1bc3.firebasestorage.app` en `us-central1`. Se publicaron los índices y las reglas de Firestore y Storage. Storage consulta Firestore mediante su cuenta de servicio para verificar el acceso de cada usuario al expediente. Se habilitó CORS para `http://localhost:8081` y `http://127.0.0.1:8091`, los orígenes del piloto local. Para un sitio publicado se debe agregar su origen HTTPS.
+El proyecto `alianza-a1bc3` usa Firestore y el bucket `alianza-a1bc3.firebasestorage.app` en `us-central1`. Storage consulta Firestore mediante su cuenta de servicio para verificar acceso. CORS permite `https://alianza-a1bc3.web.app` y los dos orígenes del piloto local. Para otro sitio, agregar el origen exacto y conservar los orígenes que sigan en uso.
 
 El recorrido web con las tres cuentas ficticias creó el folio `WR3MOgOweU5CZ9zti9KW` y verificó la asignación, el diagnóstico, los costos, la carga de la cotización y las dos imágenes, el cierre, ambas conformidades, la exportación del PDF y el registro de una solicitud de privacidad. Firebase rechazó una descarga sin sesión. El PDF resultante contiene cuatro páginas, la cotización original de tres páginas y las dos imágenes adjuntas.
 
@@ -57,3 +89,5 @@ La pantalla Perfil registra solicitudes por tipo bajo `users/{uid}/privacyReques
 Para atender una baja, verificar identidad, listar la cuenta, perfil, tickets, conformidades, objetos de Storage y respaldos afectados. Determinar qué se debe suprimir o bloquear por conservación aplicable. Registrar la decisión y el alcance. Revocar sesiones, suprimir o anonimizar los datos autorizados desde un entorno administrativo, verificar el resultado y comunicarlo por el canal acordado. La eliminación de Firebase Authentication por sí sola deja los documentos y archivos de la aplicación.
 
 Actualizar el aviso y las declaraciones del producto para cubrir Storage y sus metadatos, fotografías seleccionadas, registro de conformidad, fecha de cierre, solicitudes de privacidad y exportaciones locales. El piloto requiere una decisión sobre tratamiento de metadatos de las fotos, contenido de archivos, vínculos de descarga del proveedor y retención. Usar imágenes ficticias hasta que se aprueben los controles. La asistencia de IA y el empaquetado con Electron quedan para incrementos separados.
+
+Consultar la [propuesta de privacidad y operación](privacidad-operacion.md) para aprobar los plazos y asignar responsables antes de usar datos reales.
