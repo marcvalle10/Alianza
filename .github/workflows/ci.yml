@@ -40,6 +40,6 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm ci --ignore-scripts
-      - name: Firestore security rules
+      - name: Firestore and Storage security rules
         run: npm run test:rules
 

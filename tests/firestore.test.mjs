@@ -91,10 +91,65 @@ test('even administrators cannot rewrite original report or creator', async () =
 test('completion requires result and tests, including a reason when not tested', async () => {
   const db = auth('tech');
   await assertFails(updateDoc(ref(db, 'assigned'), { status: 'Concluido', updatedAt: serverTimestamp() }));
-  await assertFails(updateDoc(ref(db, 'assigned'), { status: 'Concluido', result: 'Reparado', finalTests: 'No realizadas (indicar motivo)', updatedAt: serverTimestamp() }));
-  await assertSucceeds(updateDoc(ref(db, 'assigned'), { status: 'Concluido', result: 'Reparado', finalTests: 'No realizadas (indicar motivo)', testReason: 'Pendiente de suministro eléctrico', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref(db, 'assigned'), { status: 'Concluido', result: 'Reparado', finalTests: 'No realizadas (indicar motivo)', updatedAt: serverTimestamp(), completedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(ref(db, 'assigned'), { status: 'Concluido', result: 'Reparado', finalTests: 'No realizadas (indicar motivo)', testReason: 'Pendiente de suministro eléctrico', updatedAt: serverTimestamp(), completedAt: serverTimestamp() }));
 });
 test('invalid status and client timestamps cannot bypass work validation', async () => {
   await assertFails(updateDoc(ref(auth('admin')), { status: 'Borrado', updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(ref(auth('admin')), { diagnosis: 'test', updatedAt: new Date(0) }));
+});
+test('multiple service types preserve the original form choices', async () => {
+  const data = ticket(); data.request.serviceType = 'Correctivo|Soporte|Diagnóstico';
+  await assertSucceeds(setDoc(ref(auth('client'), 'multiple'), data));
+  data.request.serviceType = 'Correctivo|Unknown';
+  await assertFails(setDoc(ref(auth('client'), 'invalid'), data));
+});
+test('assigned staff can save complete record fields but clients cannot', async () => {
+  const changes = { details: { activities: 'Inspección / diagnóstico|Limpieza', observations: 'Prueba', subtotal: '100', signer0_name: 'Técnico ficticio' }, updatedAt: serverTimestamp() };
+  await assertSucceeds(updateDoc(ref(auth('tech'), 'assigned'), changes));
+  await assertFails(updateDoc(ref(auth('client'), 'assigned'), changes));
+  await assertFails(updateDoc(ref(auth('tech2'), 'assigned'), changes));
+});
+test('record extensions reject unknown fields, wrong types and excessive text', async () => {
+  for (const details of [{ role: 'admin' }, { observations: 23 }, { followUp: 'x'.repeat(4001) }]) {
+    await assertFails(updateDoc(ref(auth('admin')), { details, updatedAt: serverTimestamp() }));
+  }
+});
+test('all supported detail fields can be saved in one update', async () => {
+  const schema = JSON.parse(await readFile('database/schema.json', 'utf8'));
+  const fields = Object.keys(schema.collections['tenants/{tenantId}/tickets/{ticketId}'].details);
+  const details = Object.fromEntries(fields.map(key => [key, key === 'taxRate' ? '16' : 'Prueba']));
+  await assertSucceeds(updateDoc(ref(auth('tech'), 'assigned'), { details, updatedAt: serverTimestamp() }));
+});
+test('admin can list tenant users but cannot enumerate other companies', async () => {
+  await assertSucceeds(getDocs(query(collection(auth('admin'), 'users'), where('tenantId', '==', 'acme'))));
+  await assertFails(getDocs(collection(auth('admin'), 'users')));
+  await assertFails(getDocs(query(collection(auth('client'), 'users'), where('tenantId', '==', 'acme'))));
+  await assertFails(getDoc(doc(auth('admin'), 'users/outsider')));
+});
+
+test('closure and authenticated conformity preserve the completed ticket', async () => {
+  const staff = auth('tech'), client = auth('client'), admin = auth('admin');
+  const confirmation = (db, party) => doc(ref(db, 'assigned'), 'conformities', party);
+  const form = uid => ({ uid, name: 'Participante ficticio', acceptedAt: serverTimestamp(), termsVersion: 'service-v1' });
+  await assertFails(setDoc(confirmation(client, 'client'), form('client')));
+  const closure = { status: 'Concluido', result: 'Funcionando correctamente', finalTests: 'Correctas', updatedAt: serverTimestamp() };
+  await assertFails(updateDoc(ref(staff, 'assigned'), { ...closure, completedAt: new Date(0) }));
+  await assertSucceeds(updateDoc(ref(staff, 'assigned'), { ...closure, completedAt: serverTimestamp() }));
+  await assertFails(setDoc(confirmation(admin, 'client'), form('admin')));
+  await assertFails(setDoc(confirmation(client, 'provider'), form('client')));
+  await assertSucceeds(setDoc(confirmation(staff, 'provider'), form('tech')));
+  await assertSucceeds(setDoc(confirmation(client, 'client'), form('client')));
+  await assertSucceeds(getDoc(confirmation(client, 'provider')));
+  await assertFails(setDoc(confirmation(client, 'client'), form('client')));
+  await assertFails(updateDoc(ref(admin, 'assigned'), { diagnosis: 'Cambió', updatedAt: serverTimestamp() }));
+});
+
+test('privacy requests are private, immutable and tied to the authenticated UID', async () => {
+  const path = 'users/client/privacyRequests/request-one';
+  await assertSucceeds(setDoc(doc(auth('client'), path), { type: 'deletion', createdAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(auth('client'), path)));
+  await assertFails(getDoc(doc(auth('admin'), path)));
+  await assertFails(setDoc(doc(auth('client'), 'users/tech/privacyRequests/request-one'), { type: 'deletion', createdAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(auth('client'), path), { type: 'access' }));
 });

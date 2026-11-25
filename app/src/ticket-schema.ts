@@ -28,7 +28,7 @@ export const sections: Section[] = [
   { title: '8. COSTOS DEL SERVICIO POSTERIORES (ADICIONALES) A INSTALACIÓN:', fields: [
     { label: 'Aplicabilidad de costos', options: ['NO APLICAN', 'Aplican'] },
     ...['Mano de obra', 'Materiales / refacciones', 'Traslado / otros'].flatMap(concept => text(`${concept} - Cantidad`, `${concept} - Precio unitario`, `${concept} - Importe`)),
-    ...text('Subtotal', 'IVA', 'TOTAL MXN', 'Condiciones / autorización de costos'),
+    ...text('Subtotal', 'IVA', 'TOTAL MXN', 'Condiciones / autorización de costos', 'Tasa de IVA (%)'),
   ] },
   { title: '10. CONFORMIDAD Y FIRMAS', fields: ['PRESTADOR DE SERVICIO', 'USUARIO FINAL RESPONSABLE', 'USUARIO FINAL CO-RESPONSABLE 1', 'USUARIO FINAL CO-RESPONSABLE 2'].flatMap(role => text(`${role} - Nombre`, `${role} - Cargo`, `${role} - EMPRESA`, `${role} - Signature`, `${role} - Email`)) },
 ];

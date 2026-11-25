@@ -1,4 +1,29 @@
 rules_version = '2';
 service firebase.storage {
-  match /b/{bucket}/o { match /{allPaths=**} { allow read, write: if false; } }
+  match /b/{bucket}/o {
+    function verified() { return request.auth != null && request.auth.token.email_verified == true; }
+    function profile() { return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data; }
+    function ticket(tenant, id) { return firestore.get(/databases/(default)/documents/tenants/$(tenant)/tickets/$(id)).data; }
+    function reader(tenant, id) {
+      let p = profile();
+      let t = ticket(tenant, id);
+      return p.tenantId == tenant && t.tenantId == tenant && (p.role == 'admin'
+        || (p.role == 'technician' && t.assignedTo == request.auth.uid)
+        || (p.role == 'client' && t.createdBy == request.auth.uid));
+    }
+    function editor(tenant, id) {
+      let p = profile();
+      let t = ticket(tenant, id);
+      return p.tenantId == tenant && t.tenantId == tenant && t.status != 'Concluido'
+        && (p.role == 'admin' || (p.role == 'technician' && t.assignedTo == request.auth.uid));
+    }
+    match /tenants/{tenant}/tickets/{id}/{slot} {
+      allow get: if verified() && slot in ['proposal', 'before', 'after'] && reader(tenant, id);
+      allow create, update: if verified() && slot in ['proposal', 'before', 'after'] && editor(tenant, id)
+        && request.resource.size > 0 && request.resource.size <= 6 * 1024 * 1024
+        && (request.resource.contentType in ['image/jpeg','image/png']
+          || (slot == 'proposal' && request.resource.contentType == 'application/pdf'));
+      allow list, delete: if false;
+    }
+  }
 }

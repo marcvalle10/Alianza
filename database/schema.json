@@ -1,0 +1,95 @@
+{
+  "project": "Set your Firebase project ID at deployment; never commit private credentials",
+  "collections": {
+    "tenants/{tenantId}": {
+      "name": "string",
+      "createdAt": "server timestamp",
+      "createdBy": "administrative setup only"
+    },
+    "users/{uid}": {
+      "tenantId": "string (1-80 letters, digits, _ or -)",
+      "role": "admin | technician | client",
+      "name": "string; account credentials live only in Firebase Authentication"
+    },
+    "tenants/{tenantId}/tickets/{ticketId}": {
+      "tenantId": "immutable string",
+      "createdBy": "immutable Auth UID",
+      "assignedTo": "technician UID in same company or null",
+      "status": "Pendiente | En proceso | Concluido | Requiere seguimiento",
+      "request": "Required request fields validated by firestore.rules; immutable after creation",
+      "diagnosis": "string <=4000",
+      "workDetail": "string <=4000",
+      "result": "string <=4000; multiple selections joined with |",
+      "finalTests": "enum; see firestore.rules",
+      "testReason": "string <=4000",
+      "details": {
+        "activities": "optional string <=4000; no binary files or actual electronic signatures",
+        "otherActivity": "optional string <=4000; no binary files or actual electronic signatures",
+        "quoteReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "evidenceCategories": "optional string <=4000; no binary files or actual electronic signatures",
+        "evidenceReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "beforeReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "afterReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "observations": "optional string <=4000; no binary files or actual electronic signatures",
+        "followUp": "optional string <=4000; no binary files or actual electronic signatures",
+        "nextVisit": "optional string <=4000; no binary files or actual electronic signatures",
+        "followUpOwner": "optional string <=4000; no binary files or actual electronic signatures",
+        "costApplicability": "optional string <=4000; no binary files or actual electronic signatures",
+        "laborQuantity": "optional string <=4000; no binary files or actual electronic signatures",
+        "laborUnitPrice": "optional string <=4000; no binary files or actual electronic signatures",
+        "laborAmount": "optional string <=4000; no binary files or actual electronic signatures",
+        "materialsQuantity": "optional string <=4000; no binary files or actual electronic signatures",
+        "materialsUnitPrice": "optional string <=4000; no binary files or actual electronic signatures",
+        "materialsAmount": "optional string <=4000; no binary files or actual electronic signatures",
+        "travelQuantity": "optional string <=4000; no binary files or actual electronic signatures",
+        "travelUnitPrice": "optional string <=4000; no binary files or actual electronic signatures",
+        "travelAmount": "optional string <=4000; no binary files or actual electronic signatures",
+        "subtotal": "optional string <=4000; no binary files or actual electronic signatures",
+        "tax": "optional string <=4000; no binary files or actual electronic signatures",
+        "taxRate": "optional decimal percentage as string",
+        "total": "optional string <=4000; no binary files or actual electronic signatures",
+        "costAuthorization": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_email": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_email": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_email": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_email": "optional string <=4000; no binary files or actual electronic signatures"
+      },
+      "createdAt": "immutable server timestamp",
+      "updatedAt": "server timestamp",
+      "completedAt": "server timestamp assigned at closure, or null"
+    },
+    "tenants/{tenantId}/tickets/{ticketId}/conformities/{party}": {
+      "party": "document ID provider or client",
+      "uid": "verified Auth UID for this party",
+      "name": "participant's typed name, up to 120 characters",
+      "acceptedAt": "server timestamp",
+      "termsVersion": "service-v1"
+    },
+    "users/{uid}/privacyRequests/{requestId}": {
+      "type": "access | correction | deletion | opposition",
+      "createdAt": "server timestamp"
+    }
+  },
+  "notes": [
+    "Firestore creates collections on first document write. This JSON documents the model; it is not a Firebase console import dump.",
+    "Never put passwords in Firestore.",
+    "Storage uses tenants/{tenantId}/tickets/{ticketId}/{slot}, with slots proposal, before and after. Authorization follows the parent ticket.",
+    "One tenant per user in this increment."
+  ]
+}

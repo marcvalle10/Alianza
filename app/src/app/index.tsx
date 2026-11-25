@@ -15,7 +15,7 @@ export default function Login() {
     setBusy(true); setError(''); setMessage('');
     try { await action(); } catch (e) { setError(friendlyError(e)); } finally { setBusy(false); }
   }
-  if (session.user?.emailVerified && session.membership && !session.loading) return <Redirect href="/tickets" />;
+  if (session.user?.emailVerified && session.membership && !session.loading) return <Redirect href="/dashboard" />;
   return <Page title="Bienvenido a Alianza">
     <Text style={ui.subtitle}>Solicita un servicio y consulta su seguimiento. Acceso separado por empresa.</Text>
     {usingEmulators && <Text style={ui.notice}>Ambiente local con emuladores. Utiliza cuentas y datos ficticios.</Text>}

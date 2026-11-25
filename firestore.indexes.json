@@ -1,0 +1,7 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "tickets", "fieldPath": "details", "indexes": [] },
+    { "collectionGroup": "tickets", "fieldPath": "request.description", "indexes": [] }
+  ]
+}

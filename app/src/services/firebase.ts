@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { connectAuthEmulator, initializeAuth, inMemoryPersistence, type Auth } from 'firebase/auth';
 import { connectFirestoreEmulator, initializeFirestore, memoryLocalCache, type Firestore } from 'firebase/firestore';
+import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const emulator = process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATORS === 'true';
 const config = {
@@ -11,7 +12,7 @@ const config = {
 };
 export const firebaseConfigured = emulator || Object.values(config).every(Boolean);
 export const usingEmulators = emulator;
-let services: { auth: Auth; db: Firestore } | undefined;
+let services: { auth: Auth; db: Firestore; storage: FirebaseStorage | null } | undefined;
 
 // Lazy initialization: no Firebase instance until the user opens the connection.
 export function getFirebase() {
@@ -21,18 +22,22 @@ export function getFirebase() {
   const app = getApps().length ? getApp() : initializeApp(options);
   const auth = initializeAuth(app, { persistence: inMemoryPersistence });
   const db = initializeFirestore(app, { localCache: memoryLocalCache() });
+  const bucket = emulator ? 'demo-alianza.appspot.com' : process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const storage = bucket ? getStorage(app, `gs://${bucket}`) : null;
   if (emulator) {
     const host = process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST || '127.0.0.1';
     connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, host, 8080);
+    if (storage) connectStorageEmulator(storage, host, 9199);
   }
-  services = { auth, db };
+  services = { auth, db, storage };
   return services;
 }
 
 export function friendlyError(error: unknown): string {
   const code = (error as { code?: string })?.code;
   const messages: Record<string, string> = {
+    'record-conflict': 'Otra persona actualizó este expediente. Carga la versión guardada antes de continuar.',
     'auth/invalid-credential': 'No se pudo iniciar sesión. Revisa tu correo y contraseña.',
     'auth/invalid-login-credentials': 'No se pudo iniciar sesión. Revisa tu correo y contraseña.',
     'auth/invalid-email': 'El correo no tiene un formato válido.',

@@ -1,6 +1,6 @@
 # Alianza Servicios
 
-Base académica de una aplicación de tickets para Alianza Informática. Clientes solicitan servicios y el personal gestiona diagnóstico, trabajo y seguimiento. El incremento 2 prepara acceso y tickets con Firebase; requiere configurar el proyecto. No es un sistema de producción.
+Aplicación de tickets para Alianza Informática. Los clientes solicitan servicios y el personal gestiona el diagnóstico, la evidencia y la conclusión del trabajo. Se puede probar con cuentas ficticias en Firebase Emulator Suite.
 
 ## Estado actual
 
@@ -10,7 +10,8 @@ Base académica de una aplicación de tickets para Alianza Informática. Cliente
 - Captura y consulta de tickets en Firestore con permisos por empresa, cliente y técnico asignado.
 - Asignación por administrador y seguimiento de diagnóstico, trabajo y resultado.
 - Demo del formato completo en `/demo`, temporal en memoria.
-- Archivos, firmas reales, exportación fiel e IA pendientes.
+- Propuesta adjunta, fotos de antes y después, costos calculados y conformidad autenticada para el prestador y el cliente creador.
+- PDF de cuatro páginas con estructura del formato original y archivos adjuntos. La asistencia de IA sigue desactivada.
 - Auditoría preventiva y especificación en `/docs`.
 - Workflow de CI y plantilla de pull request.
 
@@ -47,7 +48,7 @@ La salida web se genera en `app/dist`. El servidor de publicación deberá resol
 
 ## Configuración y secretos
 
-Sin `.env`, la app muestra conexión pendiente y permite abrir la demo. Para conectar Firebase, copiar las variables públicas de `.env.example` a `app/.env`, habilitar Authentication y publicar `firestore.rules`. Seguir la [guía de Firebase](docs/firebase-setup.md), incluida la activación manual de roles. No se incluye una cuenta de servicio. Las claves de IA pertenecen exclusivamente al backend futuro.
+Sin `.env`, la app muestra conexión pendiente y permite abrir la demo. Para conectar Firebase, copiar las variables públicas de `.env.example` a `app/.env`, habilitar Authentication, Firestore y Storage y seguir la [guía de piloto](docs/piloto-alianza.md). Las cuentas se activan con un perfil autorizado asignado por UID. Las claves de backend se conservan fuera del cliente y del repositorio.
 
 Para probar permisos sin proyecto real, instalar Node 22 y Java 21 y ejecutar desde la raíz:
 
@@ -56,7 +57,7 @@ npm ci
 npm run test:rules
 ```
 
-Para iniciar el entorno local interactivo: `npm run emulators`. Configurar `EXPO_PUBLIC_USE_FIREBASE_EMULATORS=true` en `app/.env`. Usa exclusivamente el proyecto ficticio `demo-alianza`.
+Para iniciar el entorno local interactivo, ejecutar `npm run emulators`. Configurar `EXPO_PUBLIC_USE_FIREBASE_EMULATORS=true` en `app/.env`. La [guía de piloto](docs/piloto-alianza.md) incluye el alta y recorrido de las tres cuentas ficticias de `demo-alianza`.
 
 ## Arquitectura prevista
 
@@ -66,15 +67,15 @@ La asistencia de IA permanece pendiente y desactivada. Requiere proveedor, regi�
 
 ## Formato y privacidad
 
-El código toma la estructura de las cuatro páginas de referencia, sin copiar los datos reales. No incluye el PDF original, las fotografías ni firmas del cliente. La exportación con diseño exacto, la carga de evidencia y las firmas siguen pendientes. Los campos de firma y archivos de la demo solo aceptan referencias de texto.
+El expediente se edita en una sola vista. El PDF conserva cuatro páginas y la numeración de los apartados. Para una propuesta PDF de varias páginas, el exportado muestra la primera página e incorpora el archivo completo como adjunto. La conformidad autenticada requiere una acción explícita y bloquea cambios posteriores al expediente.
 
-No capturar datos reales en la demo. Los plazos de retención de `/docs` son propuestas que debe aprobar la empresa; aún no hay purgas ni proceso ARCO implementados.
+Usar datos ficticios durante las pruebas. El perfil registra un folio para solicitudes de privacidad. La revisión y supresión coordinada son tareas administrativas. El aviso y los plazos en `/docs` requieren aprobación antes del piloto con usuarios reales.
 
 ## Git y CI
 
 Ramas: `main` y `develop`. Convención: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`, etc. Ejemplo: `feat: add ticket status filters`.
 
-CI valida commits, instala desde ambos lockfiles, ejecuta linter, TypeScript, exportación web y pruebas de reglas con Firestore Emulator. No hay despliegue automático. `main` se integra mediante PR y el check `quality`; ver [guía remota](docs/github-configuracion.md).
+CI valida commits, instala desde ambos lockfiles, ejecuta linter, TypeScript, exportación web y pruebas de reglas con los emuladores de Firestore y Storage. `main` se integra mediante PR y el check `quality`. Consulta la [guía de GitHub](docs/github-configuracion.md).
 
 ## Documentos
 
@@ -83,6 +84,7 @@ CI valida commits, instala desde ambos lockfiles, ejecuta linter, TypeScript, ex
 - [Inventario estructurado](docs/inventario-datos.json)
 - [Configuración de Firebase](docs/firebase-setup.md)
 - [Incremento 2 y cambios de privacidad](docs/incremento-2.md)
+- [Piloto de Alianza con cuentas ficticias](docs/piloto-alianza.md)
 
 Los PDF de entrega se generan localmente en `output/pdf` mediante `scripts/build_documents.py` con Python y ReportLab; esa carpeta está excluida de Git. Las fuentes Markdown sí se versionan.
 
@@ -92,8 +94,7 @@ La plantilla reciente falló por dependencias no publicadas en el registro dispo
 
 ## Siguientes incrementos
 
-1. Configurar el proyecto Firebase real y validar el flujo completo con cuentas ficticias.
-2. Membresías en varias empresas, historial de cambios y resolución de edición concurrente.
-3. Adjuntos y conformidad; exportación fiel del documento.
-4. Retención, borrado y consentimiento de IA.
-5. Piloto y evaluación de escritorio con Electron.
+1. Configurar el proyecto Firebase de pruebas. Validar el flujo y el PDF con Alianza en web y Android.
+2. Acordar firmas de co-responsables, revisión de solicitudes de privacidad y retención antes de incorporar datos reales.
+3. Evaluar membresías en varias empresas, historial de cambios y distribución de escritorio.
+4. Evaluar IA opcional después del piloto.

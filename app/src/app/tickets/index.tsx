@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Button, Input, Page, ui } from '../../components/ui';
 import { type Ticket, statuses } from '../../domain/tickets';
@@ -8,11 +8,13 @@ import { useSession } from '../../services/session';
 import { watchTickets } from '../../services/tickets';
 export default function TicketList() {
   const { user, membership, logout } = useSession();
+  const { status } = useLocalSearchParams<{ status?: string }>();
   const [items, setItems] = useState<Ticket[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('Todos');
+  useEffect(() => { setFilter(status || 'Todos'); }, [status]);
   useEffect(() => {
     if (!user || !membership) return;
     setLoading(true); setItems([]); setError('');
@@ -21,6 +23,7 @@ export default function TicketList() {
   const visible = items.filter(t => (filter === 'Todos' || t.status === filter) && `${t.id} ${t.request.company} ${t.request.equipment} ${t.request.description}`.toLowerCase().includes(search.toLowerCase()));
   return <Page title="Mis servicios">
     <Text style={ui.subtitle}>{membership?.role === 'admin' ? 'Administración de la empresa' : membership?.role === 'technician' ? 'Servicios asignados' : 'Solicitudes enviadas'}</Text>
+    <View style={ui.row}><Button secondary title="Inicio" onPress={() => router.push('/dashboard')} /><Button secondary title="Perfil" onPress={() => router.push('/profile')} /></View>
     <View style={ui.row}>{membership?.role !== 'technician' && <Button title="Nuevo reporte" onPress={() => router.push('/tickets/new')} />}<Button secondary title="Cerrar sesión" onPress={() => { void logout().catch(e => setError(friendlyError(e))); }} /></View>
     <Input label="Buscar por folio, empresa, equipo o descripción" value={search} onChange={setSearch} />
     <View style={ui.row}>{['Todos', ...statuses].map(s => <Button key={s} title={s} secondary={filter !== s} onPress={() => setFilter(s)} />)}</View>

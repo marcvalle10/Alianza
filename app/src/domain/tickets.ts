@@ -19,7 +19,9 @@ export type Ticket = {
   id: string; tenantId: string; createdBy: string; assignedTo: string | null;
   status: TicketStatus; request: TicketRequest; diagnosis: string; workDetail: string;
   result: string; finalTests: string; testReason: string;
+  details?: Record<string, string>;
   createdAt: { toDate(): Date } | null; updatedAt: { toDate(): Date } | null;
+  completedAt?: { toDate(): Date } | null;
 };
 export function blankRequest(email = ''): TicketRequest {
   return { ...Object.fromEntries(requestFields.map(([key]) => [key, ''])), email, priority: 'Normal', serviceType: 'Soporte' } as TicketRequest;
@@ -31,7 +33,7 @@ export function validateRequest(value: TicketRequest): string | null {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.email.trim())) return 'Revisa el correo de contacto.';
   if (!priorities.some(p => p === value.priority)) return 'Selecciona una prioridad válida.';
-  if (!serviceTypes.includes(value.serviceType)) return 'Selecciona un tipo de atención válido.';
+  if (!value.serviceType || !value.serviceType.split('|').every(t => serviceTypes.includes(t))) return 'Selecciona un tipo de atención válido.';
   return null;
 }
 export function parseMembership(data: unknown): Membership | null {

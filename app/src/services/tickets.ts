@@ -1,4 +1,4 @@
-import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { type Membership, type Ticket, type TicketRequest, type TicketStatus, validateRequest } from '../domain/tickets';
 import { getFirebase } from './firebase';
 
@@ -21,7 +21,30 @@ export async function createTicket(member: Membership, uid: string, request: Tic
   });
 }
 export function newTicketId(tenantId: string) { return doc(tickets(tenantId)).id; }
-export type WorkUpdate = Pick<Ticket, 'diagnosis' | 'workDetail' | 'result' | 'finalTests' | 'testReason'> & { status: TicketStatus; assignedTo?: string | null };
-export async function updateWork(tenantId: string, id: string, update: WorkUpdate) {
-  await updateDoc(doc(tickets(tenantId), id), { ...update, updatedAt: serverTimestamp() });
+export type WorkUpdate = Pick<Ticket, 'diagnosis' | 'workDetail' | 'result' | 'finalTests' | 'testReason'> & { status: TicketStatus; assignedTo?: string | null; details?: Record<string, string> };
+export async function updateWork(tenantId: string, id: string, update: WorkUpdate, expectedVersion?: number | null) {
+  const ref = doc(tickets(tenantId), id);
+  await runTransaction(getFirebase().db, async transaction => {
+    const current = await transaction.get(ref);
+    if (!current.exists() || (expectedVersion !== undefined && (current.data().updatedAt?.toDate().getTime() ?? null) !== expectedVersion)) throw Object.assign(new Error('El expediente cambió.'), { code: 'record-conflict' });
+    const previous = current.data();
+    const completedAt = update.status === 'Concluido' ? (previous.status === 'Concluido' && previous.completedAt ? previous.completedAt : serverTimestamp()) : null;
+    transaction.update(ref, { ...update, completedAt, updatedAt: serverTimestamp() });
+  });
+}
+
+export type Party = 'provider' | 'client';
+export type Conformity = { name: string; acceptedAt: Ticket['createdAt']; termsVersion: 'service-v1' };
+export type Conformities = Partial<Record<Party, Conformity>>;
+export function watchConformities(tenant: string, id: string, next: (entries: Conformities) => void, error: (e: unknown) => void) {
+  return onSnapshot(collection(doc(tickets(tenant), id), 'conformities'), snap => next(Object.fromEntries(snap.docs.map(row => [row.id, row.data() as Conformity]))), error);
+}
+export async function acceptConformity(tenant: string, id: string, party: Party, uid: string, name: string, expectedVersion: number) {
+  const db = getFirebase().db;
+  const ticket = doc(tickets(tenant), id);
+  await runTransaction(db, async transaction => {
+    const current = await transaction.get(ticket);
+    if (!current.exists() || current.data().updatedAt?.toDate().getTime() !== expectedVersion) throw Object.assign(new Error('El expediente cambió.'), { code: 'record-conflict' });
+    transaction.set(doc(ticket, 'conformities', party), { uid, name: name.trim(), termsVersion: 'service-v1', acceptedAt: serverTimestamp() });
+  });
 }
