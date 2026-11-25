@@ -47,7 +47,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (failed || legacy === undefined || access === undefined || manager === undefined) return;
       const scopes = [...access.values()].filter((scope): scope is Membership => scope !== null);
       if (legacy && !access.has(legacy.tenantId)) scopes.push(legacy);
-      setMemberships(scopes.sort((a, b) => a.tenantId.localeCompare(b.tenantId)));
+      scopes.sort((a, b) => a.tenantId.localeCompare(b.tenantId));
+      setMemberships(scopes);
+      setCompany(previous => {
+        if (scopes.some(scope => scope.tenantId === previous)) return previous;
+        return scopes.find(scope => scope.tenantId === legacy?.tenantId)?.tenantId ?? scopes[0]?.tenantId ?? '';
+      });
       setCanManageAccess(manager);
       setError('');
       setLoading(false);

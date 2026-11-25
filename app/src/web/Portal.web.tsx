@@ -125,7 +125,7 @@ function Users() {
         <h2>Asignar acceso</h2>
         <p className="muted">Usa el UID que la persona recibe después de verificar su correo.</p>
         <fieldset disabled={access.busy}>
-          <label className="field"><span>Empresa</span><select required value={access.tenantId || ''} onChange={e => access.select(e.target.value)}>
+          <label className="field"><span>Empresa</span><select aria-label="Empresa para administrar" required value={access.tenantId || ''} onChange={e => access.select(e.target.value)}>
             <option value="" disabled>Selecciona una empresa</option>
             {access.companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
           </select></label>

@@ -31,7 +31,7 @@ La contraseña compartida es `Demo-Alianza-2026!` y solo existe en la configurac
 
 ## Verificación local
 
-Pasaron ESLint, TypeScript, la exportación web y la generación del paquete JavaScript de Android. Pasaron 21 pruebas de reglas de Firestore y Storage. El recorrido web con Authentication, Firestore y Storage locales cubrió la creación, asignación, diagnóstico, cálculo de costos, tres adjuntos, consulta por el cliente, cierre, dos conformidades, descarga del PDF y solicitud de privacidad. La verificación contra el proyecto en la nube se describe más abajo.
+Pasaron ESLint, TypeScript, la exportación web y la generación del paquete JavaScript de Android. Pasaron 23 pruebas de reglas de Firestore y Storage. Incluyen acceso con dos empresas, asignación de técnicos activos, denegación entre empresas y suspensión de una membresía sin quitar la otra. El recorrido con los servicios locales cubrió la creación, asignación, diagnóstico, costos, archivos, cierre, conformidades, PDF y solicitud de privacidad.
 
 ## Conectar el proyecto de la empresa
 
@@ -75,6 +75,8 @@ Si el registro de npm no resuelve una dependencia de la versión actual, `eas-cl
 ## Validación en Firebase de pruebas
 
 El proyecto `alianza-a1bc3` usa Firestore y el bucket `alianza-a1bc3.firebasestorage.app` en `us-central1`. Storage consulta Firestore mediante su cuenta de servicio para verificar acceso. CORS permite `https://alianza-a1bc3.web.app` y los dos orígenes del piloto local. Para otro sitio, agregar el origen exacto y conservar los orígenes que sigan en uso.
+
+La [web publicada](https://alianza-a1bc3.web.app) se probó con tres cuentas ficticias. El cliente creó el folio `Uoo2VYz8eUKFWb3wUHL6`, administración lo asignó, el técnico subió los tres adjuntos y lo concluyó. Se verificó la descarga autenticada, el rechazo sin sesión, las dos conformidades, el PDF de cuatro páginas y el folio de privacidad. [CI de la versión publicada](https://github.com/marcvalle10/Alianza/actions/runs/45588128774)
 
 El recorrido web con las tres cuentas ficticias creó el folio `WR3MOgOweU5CZ9zti9KW` y verificó la asignación, el diagnóstico, los costos, la carga de la cotización y las dos imágenes, el cierre, ambas conformidades, la exportación del PDF y el registro de una solicitud de privacidad. Firebase rechazó una descarga sin sesión. El PDF resultante contiene cuatro páginas, la cotización original de tres páginas y las dos imágenes adjuntas.
 

@@ -35,3 +35,7 @@ Los plazos son propuestas y requieren validación por Alianza. La app registra f
 - Revisar dependencias de aplicación y herramientas de compilación. Cerrar o justificar hallazgos críticos y altos con una revisión de alcance, actualizar a versiones compatibles y volver a ejecutar CI. Mantener el piloto con datos ficticios mientras se atienden.
 - Probar la baja completa de una cuenta ficticia y documentar los plazos efectivos de respaldos. Definir responsables de accesos, privacidad, seguridad y monitoreo de cuotas.
 - Actualizar las declaraciones de la tienda si se publica allí. El piloto se distribuye por web y APK interna. Los adjuntos, la exportación y las membresías deben quedar descritos en las declaraciones que correspondan.
+
+## Resultado de la revisión de dependencias
+
+El 25 de noviembre de 2026, `npm audit --omit=dev --package-lock-only` reportó 39 hallazgos en la app, incluidos 20 altos y 2 críticos. Los críticos se atribuyeron a las dependencias transitivas `protobufjs` y `tar`. La auditoría del lockfile de herramientas reportó 58 hallazgos, 23 altos y 6 críticos. Estas cifras incluyen dependencias transitivas y su alcance en cada plataforma aún debe verificarse. La actualización automática se detuvo porque npm devolvió una versión de Babel que el registro disponible no pudo resolver. Revisar el lockfile compatible con Expo y repetir las pruebas antes de habilitar datos reales.
