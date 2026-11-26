@@ -14,6 +14,10 @@ La memoria técnica documenta la versión publicada del 26 de noviembre de 2026.
 - [Guía de datos de demostración](../datos-demostracion.md)
 - [Expediente ficticio exportado](Evidencias/Expediente_ficticio_exportado.pdf)
 - [Resultado de verificación original](Evidencias/Resultado_verificacion.txt)
+- [Resultado de carga de expedientes de demostración](Evidencias/Resultado_datos_demo.json)
+- [Panel de demostración en el emulador](Evidencias/Panel_demostracion_emulador.png)
+- [Listado de demostración en el emulador](Evidencias/Listado_demostracion_emulador.png)
+- [Paquete completo actualizado ZIP](Alianza_Servicios_Entrega_Final_Actualizada.zip)
 
 Los extractos PDF conservan la paginación de la memoria. En `Base_de_datos` se incluyen las reglas, índices, configuración y diagrama de Firestore. En `Historico_Fase_1` se conserva la documentación de las actividades anteriores.
 
@@ -23,6 +27,9 @@ Los extractos PDF conservan la paginación de la memoria. En `Base_de_datos` se 
 - [Rama de publicación](https://github.com/marcvalle10/Alianza/tree/codex/publicacion-alianza)
 - [Rama de Fase 1](https://github.com/marcvalle10/Alianza/tree/main)
 - [CI de la versión base de la memoria](https://github.com/marcvalle10/Alianza/actions/runs/45589752566)
+- [CI del catálogo de demostración](https://github.com/marcvalle10/Alianza/actions/runs/45853180922)
+
+En Firebase, la empresa Alianza Informática contiene 16 expedientes de demostración verificados el 26 de noviembre de 2026, con cuatro registros por estado. Los folios son reproducibles mediante el script documentado y las cuentas autorizadas pueden asignarlos durante la demostración. Las capturas del panel y listado corresponden a la comprobación visual con el mismo catálogo en el emulador. El ZIP contiene la copia del código del commit del catálogo y la documentación y evidencias actualizadas.
 
 El código fuente y los archivos de configuración reproducibles están en esta rama. Para acceder a tickets en el piloto se requiere una cuenta autorizada. El archivo PDF de ejemplo permite revisar el resultado de exportación sin iniciar sesión.
 

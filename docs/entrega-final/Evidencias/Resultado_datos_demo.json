@@ -1,0 +1,31 @@
+{
+  "fecha": "2026-11-26",
+  "proyecto": "alianza-a1bc3",
+  "empresa": "alianza-informatica",
+  "commit_catalogo": "6d5bb2b87a8c500a00c609be243c8bebf70887c4",
+  "ci_catalogo": "https://github.com/marcvalle10/Alianza/actions/runs/45853180922",
+  "carga_remota": {
+    "presentes_antes": 0,
+    "insertados": 16,
+    "pendientes_de_carga": 0,
+    "presentes_verificados": 16,
+    "estados_verificados": {
+      "Pendiente": 4,
+      "En proceso": 4,
+      "Concluido": 4,
+      "Requiere seguimiento": 4
+    }
+  },
+  "verificacion_local": {
+    "primera_ejecucion_insertados": 16,
+    "segunda_ejecucion_insertados": 0,
+    "folios_presentes": 16,
+    "resultado": "Aprobado en Firebase Emulator Suite",
+    "interfaz": {
+      "tarjetas_con_cuatro_expedientes": 4,
+      "filas_del_listado": 16,
+      "capturas": ["Panel_demostracion_emulador.png", "Listado_demostracion_emulador.png"]
+    }
+  },
+  "datos": "Ejemplos ficticios para demostración académica, sin conformidades ni datos de clientes reales."
+}
