@@ -1,0 +1,19 @@
+ALIANZA SERVICIOS | Evidencia de verificación
+Fecha de corte: 26 de noviembre de 2026.
+Commit: 1ef34b4a2b2bc8de2f6bc0e2534b3504c4391d7d
+
+Versión web: https://alianza-a1bc3.web.app/
+Comprobación 26/11/2026: HTTP 200.
+Pipeline: https://github.com/marcvalle10/Alianza/actions/runs/45589752566
+Comprobación 26/11/2026: completed / success, commit documentado.
+Suites: 21 pruebas de Firestore y 2 de Storage.
+
+El 25/11/2026 se comprobó el flujo de creación, asignación, carga de archivos,
+cierre, dos conformidades y exportación con tres cuentas ficticias.
+La salida de ejemplo contiene 4 páginas y 3 archivos adjuntos.
+También se verificó aislamiento y suspensión entre empresas con emuladores.
+En Android se ha probado consulta y exportación desde Expo Go SDK 54.
+La APK firmada y la verificación completa en Android quedan pendientes.
+
+El código de las pruebas y el workflow se incluyen en el ZIP de código.
+No se incluyen credenciales activas, datos de clientes ni claves privadas.

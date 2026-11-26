@@ -1,5 +1,7 @@
 # Alianza Servicios
 
+**Entrega académica:** [documentación final, diagramas y evidencias](docs/entrega-final/README.md) · [catálogo de demostración](docs/datos-demostracion.md) · [aplicación web publicada](https://alianza-a1bc3.web.app/).
+
 Aplicación de tickets para Alianza Informática. Los clientes solicitan servicios y el personal gestiona el diagnóstico, la evidencia y la conclusión del trabajo. Se puede probar con cuentas ficticias en Firebase Emulator Suite.
 
 ## Estado actual

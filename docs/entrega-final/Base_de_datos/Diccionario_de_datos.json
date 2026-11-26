@@ -1,0 +1,238 @@
+{
+  "project": "Set your Firebase project ID at deployment; never commit private credentials",
+  "collections": {
+    "tenants/{tenantId}": {
+      "name": "string",
+      "createdAt": "server timestamp"
+    },
+    "users/{uid}": {
+      "tenantId": "legacy profile field (1-80 letters, digits, _ or -)",
+      "role": "admin | technician | client",
+      "name": "string; account credentials live only in Firebase Authentication"
+    },
+    "alianzaAdmins/{uid}": {
+      "purpose": "A trusted project operator creates this marker for an approved Alianza access administrator. It does not grant ticket privileges by itself."
+    },
+    "tenants/{tenantId}/members/{uid}": {
+      "tenantId": "document tenant",
+      "name": "display name up to 120 characters",
+      "role": "admin | technician | client",
+      "active": "boolean",
+      "updatedAt": "server timestamp",
+      "updatedBy": "Alianza access administrator UID or migration marker"
+    },
+    "users/{uid}/memberships/{tenantId}": {
+      "purpose": "Identical copy of the company membership, written in the same atomic batch. Used by the account to select a company."
+    },
+    "tenants/{tenantId}/tickets/{ticketId}": {
+      "tenantId": "immutable string",
+      "createdBy": "immutable Auth UID",
+      "assignedTo": "technician UID in same company or null",
+      "status": "Pendiente | En proceso | Concluido | Requiere seguimiento",
+      "request": {
+        "company": {
+          "tipo": "string",
+          "etiqueta": "Empresa / cliente",
+          "requerido_no_vacio": true,
+          "max_caracteres": 4000
+        },
+        "rfc": {
+          "tipo": "string",
+          "etiqueta": "RFC",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "order": {
+          "tipo": "string",
+          "etiqueta": "No. de orden / referencia",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "contact": {
+          "tipo": "string",
+          "etiqueta": "Contacto responsable",
+          "requerido_no_vacio": true,
+          "max_caracteres": 4000
+        },
+        "phone": {
+          "tipo": "string",
+          "etiqueta": "Teléfono",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "email": {
+          "tipo": "string",
+          "etiqueta": "Correo electrónico",
+          "requerido_no_vacio": true,
+          "max_caracteres": 4000,
+          "validacion": "Formato de correo electrónico"
+        },
+        "address": {
+          "tipo": "string",
+          "etiqueta": "Domicilio del servicio",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "department": {
+          "tipo": "string",
+          "etiqueta": "Área / departamento",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "location": {
+          "tipo": "string",
+          "etiqueta": "Ubicación específica",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "equipment": {
+          "tipo": "string",
+          "etiqueta": "Equipo / sistema",
+          "requerido_no_vacio": true,
+          "max_caracteres": 4000
+        },
+        "brand": {
+          "tipo": "string",
+          "etiqueta": "Marca",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "model": {
+          "tipo": "string",
+          "etiqueta": "Modelo",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "serial": {
+          "tipo": "string",
+          "etiqueta": "No. de serie / inventario",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "quantity": {
+          "tipo": "string",
+          "etiqueta": "Cantidad",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "equipmentLocation": {
+          "tipo": "string",
+          "etiqueta": "Ubicación del equipo",
+          "requerido_no_vacio": false,
+          "max_caracteres": 4000
+        },
+        "description": {
+          "tipo": "string",
+          "etiqueta": "Descripción de la falla, necesidad o alcance solicitado",
+          "requerido_no_vacio": true,
+          "max_caracteres": 4000
+        },
+        "priority": {
+          "tipo": "string",
+          "requerido_no_vacio": true,
+          "valores": [
+            "Baja",
+            "Normal",
+            "Alta",
+            "Urgente"
+          ],
+          "predeterminado": "Normal"
+        },
+        "serviceType": {
+          "tipo": "string",
+          "requerido_no_vacio": true,
+          "valores": [
+            "Instalación",
+            "Preventivo",
+            "Correctivo",
+            "Soporte",
+            "Diagnóstico",
+            "Garantía",
+            "Otro"
+          ],
+          "separador_multiseleccion": "|",
+          "predeterminado": "Soporte"
+        }
+      },
+      "diagnosis": "string <=4000",
+      "workDetail": "string <=4000",
+      "result": "string <=4000; multiple selections joined with |",
+      "finalTests": "enum; see firestore.rules",
+      "testReason": "string <=4000",
+      "details": {
+        "activities": "optional string <=4000; no binary files or actual electronic signatures",
+        "otherActivity": "optional string <=4000; no binary files or actual electronic signatures",
+        "quoteReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "evidenceCategories": "optional string <=4000; no binary files or actual electronic signatures",
+        "evidenceReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "beforeReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "afterReference": "optional string <=4000; no binary files or actual electronic signatures",
+        "observations": "optional string <=4000; no binary files or actual electronic signatures",
+        "followUp": "optional string <=4000; no binary files or actual electronic signatures",
+        "nextVisit": "optional string <=4000; no binary files or actual electronic signatures",
+        "followUpOwner": "optional string <=4000; no binary files or actual electronic signatures",
+        "costApplicability": "optional string <=4000; no binary files or actual electronic signatures",
+        "laborQuantity": "optional string <=4000; no binary files or actual electronic signatures",
+        "laborUnitPrice": "optional string <=4000; no binary files or actual electronic signatures",
+        "laborAmount": "optional string <=4000; no binary files or actual electronic signatures",
+        "materialsQuantity": "optional string <=4000; no binary files or actual electronic signatures",
+        "materialsUnitPrice": "optional string <=4000; no binary files or actual electronic signatures",
+        "materialsAmount": "optional string <=4000; no binary files or actual electronic signatures",
+        "travelQuantity": "optional string <=4000; no binary files or actual electronic signatures",
+        "travelUnitPrice": "optional string <=4000; no binary files or actual electronic signatures",
+        "travelAmount": "optional string <=4000; no binary files or actual electronic signatures",
+        "subtotal": "optional string <=4000; no binary files or actual electronic signatures",
+        "tax": "optional string <=4000; no binary files or actual electronic signatures",
+        "taxRate": "optional decimal percentage as string",
+        "total": "optional string <=4000; no binary files or actual electronic signatures",
+        "costAuthorization": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer0_email": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer1_email": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer2_email": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_name": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_position": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_company": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_reference": "optional string <=4000; no binary files or actual electronic signatures",
+        "signer3_email": "optional string <=4000; no binary files or actual electronic signatures"
+      },
+      "createdAt": "immutable server timestamp",
+      "updatedAt": "server timestamp",
+      "completedAt": "server timestamp assigned at closure, or null"
+    },
+    "tenants/{tenantId}/tickets/{ticketId}/conformities/{party}": {
+      "party": "document ID provider or client",
+      "uid": "verified Auth UID for this party",
+      "name": "participant's typed name, up to 120 characters",
+      "acceptedAt": "server timestamp",
+      "termsVersion": "service-v1"
+    },
+    "users/{uid}/privacyRequests/{requestId}": {
+      "type": "access | correction | deletion | opposition",
+      "createdAt": "server timestamp"
+    }
+  },
+  "notes": [
+    "Firestore creates collections on first document write. This JSON documents the model; it is not a Firebase console import dump.",
+    "Never put passwords in Firestore.",
+    "Storage uses tenants/{tenantId}/tickets/{ticketId}/{slot}, with slots proposal, before and after. Authorization follows the parent ticket.",
+    "An account may have multiple companies. A suspended membership overrides a legacy profile. Existing profiles must be migrated before publishing the Storage rules."
+  ],
+  "documentacion": {
+    "fecha": "2026-11-26",
+    "commit": "1ef34b4a2b2bc8de2f6bc0e2534b3504c4391d7d",
+    "proposito": "Diccionario de datos de referencia. No es un archivo de importación ni una extracción de datos reales.",
+    "nota": "En request deben existir las 18 claves al crear el ticket; las opcionales admiten cadena vacía. El ID del ticket proviene de su ruta."
+  }
+}

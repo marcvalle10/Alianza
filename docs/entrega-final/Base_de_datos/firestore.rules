@@ -1,0 +1,214 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function verified() { return request.auth != null && request.auth.token.email_verified == true; }
+    function companyMember(tenant, uid) {
+      return /databases/$(database)/documents/tenants/$(tenant)/members/$(uid);
+    }
+    function personalMembership(tenant, uid) {
+      return /databases/$(database)/documents/users/$(uid)/memberships/$(tenant);
+    }
+    function legacyRole(tenant, uid) {
+      let profile = /databases/$(database)/documents/users/$(uid);
+      return exists(profile) && get(profile).data.get('tenantId', '') == tenant
+        ? get(profile).data.get('role', '') : '';
+    }
+    function roleFor(tenant, uid) {
+      let path = companyMember(tenant, uid);
+      return exists(path)
+        ? (get(path).data.active == true ? get(path).data.role : '')
+        : legacyRole(tenant, uid);
+    }
+    function mine(tenant) { return roleFor(tenant, request.auth.uid); }
+    function belongs(tenant) { return verified() && mine(tenant) in ['client', 'technician', 'admin']; }
+    function admin(tenant) { return verified() && mine(tenant) == 'admin'; }
+    function technician(tenant) { return verified() && mine(tenant) == 'technician'; }
+    function accessManager() {
+      return verified() && exists(/databases/$(database)/documents/alianzaAdmins/$(request.auth.uid));
+    }
+    function validMembership(tenant, uid, mirror) {
+      let next = request.resource.data;
+      return accessManager()
+        && exists(/databases/$(database)/documents/tenants/$(tenant))
+        && tenant.matches('[a-zA-Z0-9_-]{1,80}') && uid.matches('[a-zA-Z0-9_-]{1,128}')
+        && next.keys().hasOnly(['tenantId','name','role','active','updatedBy','updatedAt'])
+        && next.tenantId == tenant && next.role in ['client', 'technician', 'admin']
+        && required(next.name) && next.name.size() <= 120 && next.active is bool
+        && next.updatedBy == request.auth.uid && next.updatedAt == request.time
+        && existsAfter(mirror) && getAfter(mirror).data == next;
+    }
+    function text(v) { return v is string && v.size() <= 4000; }
+    function required(v) { return text(v) && v.matches('.*[^ ].*'); }
+    function validRequest(r) {
+      return r is map && r.keys().hasOnly(["company","rfc","order","contact","phone","email","address","department","location","equipment","brand","model","serial","quantity","equipmentLocation","description","priority","serviceType"])
+        && r.keys().hasAll(["company","rfc","order","contact","phone","email","address","department","location","equipment","brand","model","serial","quantity","equipmentLocation","description","priority","serviceType"])
+        && text(r.company)
+        && text(r.rfc)
+        && text(r.order)
+        && text(r.contact)
+        && text(r.phone)
+        && text(r.email)
+        && text(r.address)
+        && text(r.department)
+        && text(r.location)
+        && text(r.equipment)
+        && text(r.brand)
+        && text(r.model)
+        && text(r.serial)
+        && text(r.quantity)
+        && text(r.equipmentLocation)
+        && text(r.description)
+        && text(r.priority)
+        && text(r.serviceType)
+        && required(r.company) && required(r.contact) && required(r.equipment) && required(r.description)
+        && r.email.matches('[^ @]+@[^ @]+[.][^ @]+')
+        && r.priority in ['Baja', 'Normal', 'Alta', 'Urgente']
+        && r.serviceType.matches('(Instalación|Preventivo|Correctivo|Soporte|Diagnóstico|Garantía|Otro)([|](Instalación|Preventivo|Correctivo|Soporte|Diagnóstico|Garantía|Otro))*');
+    }
+    function detailsValid(d) {
+      // Only strings implement matches. Four supported RE2 ranges allow 4000 characters.
+      let limit = '(?s)^.{0,1000}.{0,1000}.{0,1000}.{0,1000}$';
+      return d is map && d.keys().hasOnly(["activities","otherActivity","quoteReference","evidenceCategories","evidenceReference","beforeReference","afterReference","observations","followUp","nextVisit","followUpOwner","costApplicability","laborQuantity","laborUnitPrice","laborAmount","materialsQuantity","materialsUnitPrice","materialsAmount","travelQuantity","travelUnitPrice","travelAmount","subtotal","tax","total","costAuthorization","taxRate","signer0_name","signer0_position","signer0_company","signer0_reference","signer0_email","signer1_name","signer1_position","signer1_company","signer1_reference","signer1_email","signer2_name","signer2_position","signer2_company","signer2_reference","signer2_email","signer3_name","signer3_position","signer3_company","signer3_reference","signer3_email"])
+        && d.get('activities', '').matches(limit)
+        && d.get('otherActivity', '').matches(limit)
+        && d.get('quoteReference', '').matches(limit)
+        && d.get('evidenceCategories', '').matches(limit)
+        && d.get('evidenceReference', '').matches(limit)
+        && d.get('beforeReference', '').matches(limit)
+        && d.get('afterReference', '').matches(limit)
+        && d.get('observations', '').matches(limit)
+        && d.get('followUp', '').matches(limit)
+        && d.get('nextVisit', '').matches(limit)
+        && d.get('followUpOwner', '').matches(limit)
+        && d.get('costApplicability', '').matches(limit)
+        && d.get('laborQuantity', '').matches(limit)
+        && d.get('laborUnitPrice', '').matches(limit)
+        && d.get('laborAmount', '').matches(limit)
+        && d.get('materialsQuantity', '').matches(limit)
+        && d.get('materialsUnitPrice', '').matches(limit)
+        && d.get('materialsAmount', '').matches(limit)
+        && d.get('travelQuantity', '').matches(limit)
+        && d.get('travelUnitPrice', '').matches(limit)
+        && d.get('travelAmount', '').matches(limit)
+        && d.get('subtotal', '').matches(limit)
+        && d.get('tax', '').matches(limit)
+        && d.get('total', '').matches(limit)
+        && d.get('costAuthorization', '').matches(limit)
+        && d.get('taxRate', '').matches(limit)
+        && d.get('signer0_name', '').matches(limit)
+        && d.get('signer0_position', '').matches(limit)
+        && d.get('signer0_company', '').matches(limit)
+        && d.get('signer0_reference', '').matches(limit)
+        && d.get('signer0_email', '').matches(limit)
+        && d.get('signer1_name', '').matches(limit)
+        && d.get('signer1_position', '').matches(limit)
+        && d.get('signer1_company', '').matches(limit)
+        && d.get('signer1_reference', '').matches(limit)
+        && d.get('signer1_email', '').matches(limit)
+        && d.get('signer2_name', '').matches(limit)
+        && d.get('signer2_position', '').matches(limit)
+        && d.get('signer2_company', '').matches(limit)
+        && d.get('signer2_reference', '').matches(limit)
+        && d.get('signer2_email', '').matches(limit)
+        && d.get('signer3_name', '').matches(limit)
+        && d.get('signer3_position', '').matches(limit)
+        && d.get('signer3_company', '').matches(limit)
+        && d.get('signer3_reference', '').matches(limit)
+        && d.get('signer3_email', '').matches(limit);
+    }
+    function workValid(d) {
+      return d.status in ['Pendiente', 'En proceso', 'Concluido', 'Requiere seguimiento']
+        && text(d.diagnosis) && text(d.workDetail) && text(d.result) && text(d.testReason)
+        && d.finalTests in ['', 'Correctas', 'Con observaciones', 'No realizadas (indicar motivo)']
+        && (d.status != 'Concluido' || (required(d.result) && d.finalTests != ''
+            && (d.finalTests != 'No realizadas (indicar motivo)' || required(d.testReason))));
+    }
+    function validAssignee(tenant, uid) {
+      return uid == null || (uid is string && uid.size() > 0
+        && roleFor(tenant, uid) == 'technician');
+    }
+    function closureValid(old, next) {
+      let oldDate = old.get('completedAt', null);
+      let newDate = next.get('completedAt', null);
+      return next.status == 'Concluido'
+        ? (old.status == 'Concluido' && oldDate != null ? newDate == oldDate : newDate == request.time)
+        : newDate == null;
+    }
+    match /users/{uid} {
+      allow get: if verified() && (request.auth.uid == uid || admin(resource.data.tenantId));
+      allow list: if verified() && admin(resource.data.tenantId);
+      allow create, update, delete: if false;
+      match /memberships/{tenant} {
+        allow read: if verified() && (request.auth.uid == uid || accessManager());
+        allow create, update: if validMembership(tenant, uid, companyMember(tenant, uid));
+        allow delete: if false;
+      }
+    }
+    match /alianzaAdmins/{uid} {
+      allow get: if verified() && request.auth.uid == uid;
+    }
+    match /tenants/{tenant} {
+      allow get: if accessManager() || belongs(tenant);
+      allow list: if accessManager();
+      allow create: if accessManager() && tenant.matches('[a-zA-Z0-9_-]{1,80}')
+        && request.resource.data.keys().hasOnly(['name','createdAt'])
+        && required(request.resource.data.name) && request.resource.data.name.size() <= 120
+        && request.resource.data.createdAt == request.time;
+      match /members/{uid} {
+        allow read: if accessManager() || admin(tenant);
+        allow create, update: if validMembership(tenant, uid, personalMembership(tenant, uid));
+        allow delete: if false;
+      }
+    }
+    match /tenants/{tenant}/tickets/{ticketId} {
+      allow read: if verified() && (mine(tenant) == 'admin'
+        || (mine(tenant) == 'client' && resource.data.createdBy == request.auth.uid)
+        || (mine(tenant) == 'technician' && resource.data.assignedTo == request.auth.uid));
+      allow create: if verified() && mine(tenant) in ['client', 'admin']
+        && request.resource.data.keys().hasOnly(['tenantId','createdBy','assignedTo','status','request','diagnosis','workDetail','result','finalTests','testReason','createdAt','updatedAt'])
+        && request.resource.data.tenantId == tenant
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.assignedTo == null
+        && request.resource.data.status == 'Pendiente'
+        && validRequest(request.resource.data.request)
+        && request.resource.data.diagnosis == '' && request.resource.data.workDetail == ''
+        && request.resource.data.result == '' && request.resource.data.finalTests == '' && request.resource.data.testReason == ''
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+      allow update: if belongs(tenant) && request.resource.data.updatedAt == request.time
+        && ((admin(tenant)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignedTo','status','diagnosis','workDetail','result','finalTests','testReason','details','updatedAt','completedAt'])
+          && (request.resource.data.assignedTo == resource.data.assignedTo
+            || validAssignee(tenant, request.resource.data.assignedTo)))
+        || (technician(tenant) && resource.data.assignedTo == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','diagnosis','workDetail','result','finalTests','testReason','details','updatedAt','completedAt'])))
+        && workValid(request.resource.data) && closureValid(resource.data, request.resource.data)
+        && !existsAfter(/databases/$(database)/documents/tenants/$(tenant)/tickets/$(ticketId)/conformities/provider)
+        && !existsAfter(/databases/$(database)/documents/tenants/$(tenant)/tickets/$(ticketId)/conformities/client)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['details']) || detailsValid(request.resource.data.details));
+      allow delete: if false;
+      match /conformities/{party} {
+        function parentTicket() { return get(/databases/$(database)/documents/tenants/$(tenant)/tickets/$(ticketId)).data; }
+        allow read: if belongs(tenant) && (admin(tenant)
+          || (technician(tenant) && parentTicket().assignedTo == request.auth.uid)
+          || (mine(tenant) == 'client' && parentTicket().createdBy == request.auth.uid));
+        allow create: if belongs(tenant) && parentTicket().status == 'Concluido'
+          && parentTicket().get('completedAt', null) != null
+          && ((party == 'provider' && technician(tenant) && parentTicket().assignedTo == request.auth.uid)
+            || (party == 'client' && mine(tenant) == 'client' && parentTicket().createdBy == request.auth.uid))
+          && request.resource.data.keys().hasOnly(['uid','name','acceptedAt','termsVersion'])
+          && request.resource.data.uid == request.auth.uid
+          && required(request.resource.data.name) && request.resource.data.name.size() <= 120
+          && request.resource.data.acceptedAt == request.time && request.resource.data.termsVersion == 'service-v1';
+        allow update, delete: if false;
+      }
+    }
+    match /users/{uid}/privacyRequests/{id} {
+      allow read: if verified() && request.auth.uid == uid;
+      allow create: if verified() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['type','createdAt'])
+        && request.resource.data.type in ['access','correction','deletion','opposition']
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+  }
+}
